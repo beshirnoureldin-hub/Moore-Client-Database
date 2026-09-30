@@ -48,9 +48,25 @@
   input,select,textarea{font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)}
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
   .tabs{display:flex;gap:6px;margin:18px 0 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  .tab{padding:10px 16px;border:none;background:none;border-bottom:2px solid transparent;border-radius:0;color:var(--muted);font-weight:600}
+  .tab{padding:10px 16px;border:none;background:none;border-bottom:2px solid transparent;border-radius:0;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
+  [dir="rtl"] .tab{letter-spacing:0;font-size:14px} /* spacing would break Arabic letter joins */
   .tab:hover{color:var(--brand)}
   .tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+  .abadge{display:inline-block;min-width:18px;padding:1px 6px;margin-inline-start:6px;border-radius:9px;background:#d64352;color:#fff;font-size:11px;line-height:16px;letter-spacing:0;text-align:center}
+  .abadge.amber{background:#e0a81e}
+  .gchip{display:inline-block;padding:1px 8px;margin-inline-start:6px;border:1px solid var(--brand);border-radius:10px;color:var(--brand);font-size:11px;font-weight:700;cursor:pointer;vertical-align:1px;white-space:nowrap}
+  .gchip:hover{background:var(--brand-soft)}
+  .rankmode button{padding:5px 12px;font-size:12px}
+  .memberrow{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .memberrow:last-child{border-bottom:none}
+  .badge.grey{background:#eef1f8;color:#566079}
+  .qgrid{display:grid;grid-template-columns:minmax(180px,34%) 1fr;gap:10px 16px;padding:14px 18px;align-items:start}
+  .qgrid>label{font-weight:600;font-size:12.5px;color:var(--muted);padding-top:7px}
+  .qgrid input:not([type=radio]),.qgrid select,.qgrid textarea{width:100%}
+  .qval{padding-top:6px;white-space:normal}
+  .qtable table{margin:0}.qtable td,.qtable th{padding:4px 6px}
+  .yn label{margin-inline-end:14px;font-size:13px}
+  @media (max-width:640px){.qgrid{grid-template-columns:1fr}.qgrid>label{padding-top:0}}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
   .panel h3{margin:0;padding:15px 18px;font-size:15px;border-bottom:1px solid var(--line)}
   table{width:100%;border-collapse:collapse}
@@ -155,23 +171,30 @@
     <div class="stats" id="stats"></div>
     <div class="toolbar">
       <button class="primary" id="btnAddClient" onclick="openClientModal(null)" data-i18n="add_client">+ Add client</button>
+      <button id="btnAddGroup" onclick="openGroupModal(null)" data-i18n="new_group">+ New group</button>
       <button id="btnRates" onclick="openRates()" data-i18n="exchange_rates">💱 Exchange rates</button>
       <button id="btnUsers" onclick="setTab('users')" class="ghost" data-i18n="settings">⚙ Settings</button>
       <div class="spacer"></div>
       <input class="search" id="search" data-i18n-ph="search_ph" placeholder="Search client or service…" oninput="renderAll()">
     </div>
     <div class="tabs" id="tabs">
-      <button class="tab active" data-tab="clients" onclick="setTab('clients')" id="tabClients">Clients ranked</button>
+      <button class="tab active" data-tab="list" onclick="setTab('list')" data-i18n="tab_list">Client list</button>
+      <button class="tab hidden" data-tab="partners" onclick="setTab('partners')" id="tabPartners" data-i18n="tab_by_partner">Clients by partner</button>
+      <button class="tab hidden" data-tab="managers" onclick="setTab('managers')" id="tabManagers" data-i18n="tab_by_manager">Clients by manager</button>
       <button class="tab" data-tab="engagements" onclick="setTab('engagements')" data-i18n="tab_eng">All engagements</button>
-      <button class="tab" data-tab="list" onclick="setTab('list')" data-i18n="tab_list">Client list</button>
-      <button class="tab hidden" data-tab="people" onclick="setTab('people')" id="tabPeople" data-i18n="tab_people">By partner &amp; manager</button>
+      <button class="tab" data-tab="clients" onclick="setTab('clients')" id="tabClients">Client ranking</button>
+      <button class="tab hidden" data-tab="compliance" onclick="setTab('compliance')" id="tabCompliance"><span data-i18n="tab_compliance">Compliance</span><span id="compBadge" class="abadge amber hidden"></span></button>
+      <button class="tab" data-tab="alerts" onclick="setTab('alerts')" id="tabAlerts"><span data-i18n="tab_alerts">Alerts</span><span id="alertBadge" class="abadge hidden"></span></button>
       <button class="tab" data-tab="users" onclick="setTab('users')" id="tabUsers" data-i18n="settings">⚙ Settings</button>
     </div>
     <div id="mainView">
-      <div id="tab-clients"><div class="panel"><h3 id="clientsTitle">Clients — ranked by revenue (EGP)</h3><div id="clientsTable"></div></div></div>
+      <div id="tab-clients" class="hidden"><div class="panel"><h3 id="clientsTitle">Clients — ranked by revenue (EGP)</h3><div id="clientsTable"></div></div></div>
       <div id="tab-engagements" class="hidden"><div class="panel"><h3 data-i18n="tab_eng">All engagements</h3><div id="engTable"></div></div></div>
-      <div id="tab-list" class="hidden"><div class="panel"><h3 data-i18n="tab_list">Client list</h3><div id="listTable"></div></div></div>
-      <div id="tab-people" class="hidden"><div id="peopleTable"></div></div>
+      <div id="tab-list"><div class="panel"><h3 data-i18n="tab_list">Client list</h3><div id="listTable"></div></div></div>
+      <div id="tab-compliance" class="hidden"><div id="complianceTable"></div></div>
+      <div id="tab-alerts" class="hidden"><div id="alertsTable"></div></div>
+      <div id="tab-partners" class="hidden"><div id="partnersTable"></div></div>
+      <div id="tab-managers" class="hidden"><div id="managersTable"></div></div>
       <div id="tab-users" class="hidden"><div class="panel"><h3 data-i18n="settings_title">Settings — users &amp; access</h3><div id="usersTable"></div></div></div>
     </div>
     <div id="clientView" class="hidden"></div>
@@ -184,6 +207,7 @@
   <div class="body">
     <div class="field"><label data-i18n="l_client_name">Client name *</label><input id="cName" placeholder="e.g. Acme Corp"></div>
     <div class="field"><label data-i18n="l_industry">Industry</label><select id="cIndustry" onchange="updateFRA()"><option value="" data-i18n="opt_select">Select…</option></select></div>
+    <div class="field"><label data-i18n="l_group">Group</label><select id="cGroup"></select></div>
     <div class="field"><label data-i18n="ct_label">Client type</label>
       <div id="cTypeBox" class="ctbox">
         <label><input type="checkbox" value="Transnational"><span data-i18n="ct_transnational">Transnational</span></label>
@@ -200,10 +224,15 @@
       <div class="field"><label data-i18n="l_legal">Legal structure</label><select id="cLegal"><option value="" data-i18n="opt_select">Select…</option><option>SAE</option><option>LLC</option><option>Partnership</option><option>Branch</option><option>Rep Office</option></select></div>
       <div class="field"><label data-i18n="l_currency">Contractual currency</label><select id="cCurrency"><option>EGP</option><option>USD</option><option>EUR</option><option>GBP</option><option>SAR</option><option>AED</option><option>KWD</option></select></div>
     </div>
-    <div class="row2">
+    <div class="row2" id="cKycRow">
       <div class="field"><label data-i18n="l_kyc_completed">KYC/AML completed</label>
         <select id="cKyc"><option value="no" data-i18n="no">No</option><option value="yes" data-i18n="yes">Yes</option></select></div>
       <div class="field"><label data-i18n="l_kyc_date">Last KYC/AML review</label><input id="cKycDate" type="date"></div>
+    </div>
+    <div class="row2" id="cAcRow">
+      <div class="field"><label data-i18n="l_ac_completed">Acceptance &amp; Continuance completed</label>
+        <select id="cAc"><option value="no" data-i18n="no">No</option><option value="yes" data-i18n="yes">Yes</option></select></div>
+      <div class="field"><label data-i18n="l_ac_date">A&amp;C date</label><input id="cAcDate" type="date"></div>
     </div>
     <div class="field"><label data-i18n="l_notes">Notes</label><textarea id="cNotes" rows="2"></textarea></div>
   </div>
@@ -215,7 +244,7 @@
   <h3 id="engModalTitle">Add engagement</h3>
   <div class="body">
     <input type="hidden" id="eClientId">
-    <div class="field"><label data-i18n="l_service_line">Service line *</label><input id="eService" placeholder="e.g. Audit, Tax, Advisory"></div>
+    <div class="field"><label data-i18n="l_service_line">Service line *</label><select id="eService" onchange="updateDueVisibility()"></select></div>
     <div class="row2">
       <div class="field"><label data-i18n="l_year">Year *</label><select id="eYear"></select></div>
       <div class="field" id="eRevWrap"><label id="eRevLabel">Revenue *</label><input id="eRevenue" type="number" step="0.01" placeholder="50000" oninput="updateEngFx()"></div>
@@ -225,6 +254,10 @@
       <div class="field"><label data-i18n="l_status">Status</label><select id="eStatus"><option value="Open" data-i18n="st_open">Open</option><option value="Closed" data-i18n="st_closed">Closed</option></select></div>
       <div class="field"><label data-i18n="l_billing_freq">Billing frequency</label>
         <select id="eFreq"><option value="" data-i18n="opt_select">Select…</option><option value="Monthly" data-i18n="freq_monthly">Monthly</option><option value="Quarterly" data-i18n="freq_quarterly">Quarterly</option><option value="Annual" data-i18n="freq_annual">Annual</option><option value="One-off" data-i18n="freq_oneoff">One-off</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="field" id="eDueWrap"><label data-i18n="l_due_date">Due date</label><input id="eDue" type="date"></div>
+      <div class="hint" id="eDueHint" style="align-self:end;padding-bottom:10px" data-i18n="due_audit_only">Deadlines are tracked for audit, review and AUP engagements.</div>
     </div>
     <div class="row2">
       <div class="field"><label data-i18n="l_eng_partner">Engagement partner</label><select id="ePartner"></select></div>
@@ -256,6 +289,44 @@
   <div class="foot"><button onclick="closeModal('ovRates')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveRates()" data-i18n="save_rates">Save rates</button></div>
 </div></div>
 
+<!-- START QUESTIONNAIRE MODAL -->
+<div class="overlay" id="ovStartReview"><div class="modal">
+  <h3 data-i18n="start_q">Start a questionnaire</h3>
+  <div class="body">
+    <div class="field"><label data-i18n="th_client">Client</label>
+      <input id="srSearch" data-i18n-ph="members_search_ph" placeholder="Search clients…" oninput="fillStartClients()">
+      <select id="srClient" size="7" onchange="updateStartGroup()" style="width:100%;margin-top:6px"></select></div>
+    <div class="field"><label data-i18n="q_type">Questionnaire</label>
+      <select id="srKind"><option value="kyc">KYC / AML</option><option value="ac" data-i18n="al_ac">Acceptance &amp; Continuance</option></select></div>
+    <div id="srGroupWrap" class="hidden"><label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="srGroup" checked> <span id="srGroupLbl"></span></label></div>
+  </div>
+  <div class="foot"><button onclick="closeModal('ovStartReview')" data-i18n="cancel">Cancel</button><button class="primary" onclick="startReviewFromModal()" data-i18n="start_btn">Start</button></div>
+</div></div>
+
+<!-- GROUP MODAL -->
+<div class="overlay" id="ovGroup"><div class="modal">
+  <h3 id="groupModalTitle">New group</h3>
+  <div class="body">
+    <div class="row2">
+      <div class="field"><label data-i18n="l_group_code">Group code *</label><input id="gCode" data-i18n-ph="group_code_ph" placeholder="e.g. GRP-ELSEWEDY"></div>
+      <div class="field"><label data-i18n="l_group_name">Group name *</label><input id="gName" placeholder=""></div>
+    </div>
+    <div class="field"><label data-i18n="l_notes">Notes</label><textarea id="gNotes" rows="2"></textarea></div>
+  </div>
+  <div class="foot"><button onclick="closeModal('ovGroup')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveGroup()" data-i18n="save_group">Save group</button></div>
+</div></div>
+
+<!-- GROUP MEMBERS MODAL -->
+<div class="overlay" id="ovMembers"><div class="modal" style="max-width:560px">
+  <h3 id="membersTitle">Entities in group</h3>
+  <div class="body">
+    <input id="membersSearch" data-i18n-ph="members_search_ph" placeholder="Search clients…" oninput="renderMemberList()" style="width:100%;margin-bottom:8px">
+    <div class="hint" id="membersCount" style="margin-bottom:6px"></div>
+    <div id="membersList" style="max-height:48vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px 10px"></div>
+  </div>
+  <div class="foot"><button onclick="closeModal('ovMembers')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveMembers()" data-i18n="save">Save</button></div>
+</div></div>
+
 <!-- ASSIGN MODAL -->
 <div class="overlay" id="ovAssign"><div class="modal">
   <h3 id="assignTitle">Assign staff to client</h3>
@@ -282,7 +353,7 @@ const I18N={
   pending_title:"Account created ✓", pending_msg:"Your access is pending. A partner needs to grant your role before you can use the tracker.",
   signout:"Sign out", loading:"Loading…",
   add_client:"+ Add client", exchange_rates:"💱 Exchange rates", settings:"⚙ Settings", search_ph:"Search client or service…",
-  tab_clients:"Clients ranked", tab_eng:"All engagements", tab_list:"Client list", settings_title:"Settings — users & access",
+  tab_clients:"Client ranking",tab_eng:"All engagements", tab_list:"Client list", settings_title:"Settings — users & access",
   clients:"Clients", in_your_view:"in your view", engagements:"Engagements", total_word:"total",
   total_signed:"Total signed revenue", all_eng_egp:"all engagements, EGP", n_engagements:"{n} engagements",
   top_client:"Top client", avg_client:"Avg / client", mean_revenue:"mean revenue",
@@ -299,7 +370,49 @@ const I18N={
   open_revenue:"Open revenue", open_engs_sub:"open engagements", lifetime_revenue:"Lifetime revenue",
   open_word:"Open", n_closed:"{n} closed", open_engagements:"Open engagements", closed_engagements:"Closed engagements",
   l_view_year:"View year:", all_years:"All years", go_home:"Home",
-  tab_people:"By partner & manager", by_partner:"Engagements by engagement partner", by_manager:"Engagements by engagement manager",
+  tab_compliance:"Compliance", portal_intro:"KYC / AML and Acceptance & Continuance questionnaires. Prepared and submitted by people with questionnaire access; approved by people with sign-off.",
+  signoff_people:"Sign-off: {names}", no_signoff:"No one has sign-off yet — a partner can tick “Sign-off” for someone in ⚙ Settings.",
+  th_kyc_access:"KYC questionnaire", th_kyc_signoff:"Sign-off", kyc_access_tip:"Can prepare and submit KYC / A&C questionnaires and upload documents",
+  kyc_signoff_tip:"Can approve or return questionnaires (never their own)", signoff_implies:"Sign-off includes questionnaire access",
+  kyc_perm_hint:"KYC questionnaire and Sign-off can be given to anyone. Their role still decides which clients they see — e.g. an audit manager only works on their own portfolio. Nobody can sign off a questionnaire they prepared or submitted.",
+  start_q:"Start a questionnaire", start_q_btn:"+ Start questionnaire", start_btn:"Start", q_type:"Questionnaire", q_scope:"Applies to",
+  whole_group:"Whole group ({n} entities)", this_entity:"This entity", q_prepared_by:"Prepared by", q_submitted_by:"Submitted by",
+  q_approved_by:"Approved by", q_returned_by:"Returned by", q_updated:"Updated", open_btn:"Open", q_uploaded_by:"Uploaded by",
+  rv_draft:"In progress", rv_submitted:"Awaiting approval", rv_returned:"Returned for changes", rv_approved:"Approved",
+  n_for_you:"{n} for you to review", approved_30:"Approved (last 30 days)", q_in_progress:"In progress (drafts)",
+  q_todo:"To do — clients needing KYC / A&C", q_recent:"Recently approved", showing_first:"Showing the first {n} of {total}.",
+  apply_to_group:"Apply to the whole group {g} ({n} entities)", pick_client:"Please choose a client.",
+  compliance_q:"Compliance questionnaires", start_kyc:"+ KYC questionnaire", start_ac:"+ A&C questionnaire", no_questionnaires:"No questionnaires yet.",
+  applies_group:"applies to all {n} entities", placeholder_note:"Placeholder questions — these will be replaced with Moore Egypt's own form.",
+  details_ph:"Details / explanation", add_row:"+ Add row", supporting_docs:"Supporting documents", doc_type:"Document type",
+  no_docs:"No documents uploaded yet.", upload_btn:"Upload", pick_file:"Please choose a file first.",
+  save_draft:"Save draft", submit_approval:"Submit for approval", delete_draft:"Delete draft",
+  completion_date:"Completion date", approve_btn:"Approve", return_comment:"Reason for returning", return_ph:"What needs to be changed?", return_btn:"Return for changes",
+  cannot_self_approve:"You prepared or submitted this questionnaire, so another compliance officer must approve it.",
+  awaiting_officer:"Submitted — awaiting the compliance officer's approval.", returned_note:"Returned by the compliance officer:",
+  a_missing_required:"Please complete these required questions before submitting:", a_confirm_submit:"Submit this questionnaire to the compliance officer for approval? You won't be able to edit it while it is being reviewed.",
+  submitted_ok:"✓ Submitted for approval", saved_ok:"✓ Draft saved", a_delete_draft:"Delete this draft questionnaire and its documents?",
+  a_confirm_approve:"Approve this {what} questionnaire? KYC/A&C will be marked complete on {d} for {n} entit(y/ies).",
+  a_client_not_updated:"Approved, but the client details could not be updated: ", approved_ok:"✓ Approved — client record updated",
+  a_comment_required:"Please say what needs to be changed.", via_questionnaire:"Completed through an approved compliance questionnaire",
+  new_group:"+ New group",new_group_title:"New group", edit_group:"Edit group", l_group_code:"Group code *", group_code_ph:"e.g. GRP-001",
+  l_group_name:"Group name *", save_group:"Save group", l_group:"Group", no_group:"— No group —", members_search_ph:"Search clients…",
+  grp_status:"{n} of {total}: {s}", n_entities:"{n} entities", rank_by:"Rank by:", rank_groups:"Group", rank_entities:"Entity",
+  n_up_to_date:"{ok} of {n} entities up to date", completed_on:"Completed on", mark_all_done:"Mark complete for all {n} entities",
+  group_word:"Group", manage_members:"Add / remove entities", group_revenue:"Group revenue", group_onboarding:"Group onboarding — tick off for all entities",
+  group_tick_hint:"This copies the completion and date to every entity in the group. You can still change a single entity from its own page.",
+  group_members:"Entities in this group", ac_short:"A&C", group_empty:"No entities yet — click “Add / remove entities”.",
+  a_confirm_group_tick:"Mark {what} as completed on {d} for all {n} entities in this group?", done_n:"✓ Updated {n} entities",
+  a_group_required:"Group code and group name are required.", a_group_dup:"Group code “{c}” is already used by another group.",
+  a_delete_group:"Delete group {g}? The entities are kept; they just won't be grouped any more.", m_members:"Entities in {g}",
+  n_selected:"{n} selected", in_group:"now in {g}", plus_more:"(+{n} more)", n_of_entities:"{n} of {total} entities", open_group:"Open group",
+  tab_alerts:"Alerts",al_eng_overdue:"Overdue audit engagements", al_eng_soon:"Audit engagements due in the next {n} days", al_kyc:"KYC / onboarding",
+  al_ac:"Acceptance & Continuance", al_nodue:"Open audit engagements with no due date", due_audit_only:"Deadlines are tracked for audit, review and AUP engagements.", al_none:"Nothing here — all clear.",
+  th_due:"Due date", th_days_over:"Days overdue", th_days_left:"Days left", th_issue:"Issue", th_last_review:"Last completed", th_next_due:"Next due",
+  l_due_date:"Due date", l_ac_completed:"Acceptance & Continuance completed", l_ac_date:"A&C date", ac_next:"A&C next due",
+  rn_ac_incomplete:"A&C not completed", rn_ac_overdue:"A&C overdue (due {d})", rn_ac_soon:"A&C renewal due {d}",
+  l_ac_interval:"A&C renewal every (months)", l_ac_warn:"Warn before A&C renewal (months)",
+  tab_by_partner:"Clients by partner", tab_by_manager:"Clients by manager", by_partner:"Engagements by engagement partner", by_manager:"Engagements by engagement manager",
   th_person:"Name", th_clients_n:"Clients", not_assigned:"Not assigned", no_eng_period:"No engagements for this period.",
   l_eng_partner:"Engagement partner", l_eng_manager:"Engagement manager", not_set:"— Not set —", former_user:"(former user)",
   eng_partner_short:"Partner", eng_manager_short:"Manager",
@@ -332,7 +445,9 @@ const I18N={
   users_hint:"“No access” blocks a user. Audit managers also need clients assigned (Client list → Assign). You can't change your own role here (a safety guard).",
   role_partner:"Partner (full admin)", role_finance:"Finance", role_office_admin:"Office admin (no financials)",
   role_manager:"Audit manager (own portfolio)", role_none:"No access",
+  role_compliance:"Compliance staff (KYC, no financials)", role_compliance_officer:"Compliance officer (approves KYC/A&C)",
   rs_partner:"Partner", rs_finance:"Finance", rs_office_admin:"Office admin", rs_manager:"Audit manager", rs_none:"No access",
+  rs_compliance:"Compliance", rs_compliance_officer:"Compliance officer",
   a_email_pass:"Enter your email and password.", a_signin_failed:"Sign-in failed.", a_account_created:"Account created — signing you in…",
   a_client_required:"Client name is required.", a_eng_required:"Service line and year are required.",
   a_valid_email:"Enter a valid email address.", a_could_not_add:"Could not add: ", a_could_not_save:"Could not save: ",
@@ -362,7 +477,49 @@ const I18N={
   open_revenue:"إيراد التكليفات المفتوحة", open_engs_sub:"تكليفات مفتوحة", lifetime_revenue:"إجمالي الإيراد",
   open_word:"مفتوح", n_closed:"{n} مغلق", open_engagements:"التكليفات المفتوحة", closed_engagements:"التكليفات المغلقة",
   l_view_year:"عرض السنة:", all_years:"كل السنوات", go_home:"الرئيسية",
-  tab_people:"حسب الشريك والمدير", by_partner:"التكليفات حسب شريك التكليف", by_manager:"التكليفات حسب مدير التكليف",
+  tab_compliance:"الامتثال", portal_intro:"استبيانات KYC / مكافحة غسل الأموال وقبول العميل واستمراره. يُعدّها من لديه صلاحية الاستبيان، ويعتمدها من لديه صلاحية الاعتماد.",
+  signoff_people:"الاعتماد: {names}", no_signoff:"لا يوجد من لديه صلاحية الاعتماد بعد — يمكن للشريك تحديد «الاعتماد» لأحد المستخدمين من ⚙ الإعدادات.",
+  th_kyc_access:"استبيان KYC", th_kyc_signoff:"الاعتماد", kyc_access_tip:"يمكنه إعداد وتقديم استبيانات KYC والقبول والاستمرار ورفع المستندات",
+  kyc_signoff_tip:"يمكنه اعتماد الاستبيانات أو إعادتها (وليس ما أعدّه بنفسه)", signoff_implies:"صلاحية الاعتماد تشمل صلاحية الاستبيان",
+  kyc_perm_hint:"يمكن منح صلاحية استبيان KYC والاعتماد لأي مستخدم، بينما تحدد صلاحيته الأساسية العملاء الذين يراهم — فمدير التدقيق مثلاً يعمل على محفظته فقط. لا يمكن لأحد اعتماد استبيان أعدّه أو قدّمه بنفسه.",
+  start_q:"بدء استبيان", start_q_btn:"+ بدء استبيان", start_btn:"بدء", q_type:"الاستبيان", q_scope:"ينطبق على",
+  whole_group:"المجموعة كاملة ({n} كيانات)", this_entity:"هذا الكيان", q_prepared_by:"أعدّه", q_submitted_by:"قدّمه",
+  q_approved_by:"اعتمده", q_returned_by:"أعاده", q_updated:"آخر تحديث", open_btn:"فتح", q_uploaded_by:"رفعه",
+  rv_draft:"قيد الإعداد", rv_submitted:"بانتظار الاعتماد", rv_returned:"معاد للتعديل", rv_approved:"معتمد",
+  n_for_you:"{n} بانتظار مراجعتك", approved_30:"معتمد (آخر 30 يومًا)", q_in_progress:"قيد الإعداد (مسودات)",
+  q_todo:"مطلوب — عملاء يحتاجون KYC / القبول والاستمرار", q_recent:"اعتُمد مؤخرًا", showing_first:"عرض أول {n} من {total}.",
+  apply_to_group:"تطبيق على المجموعة كاملة {g} ({n} كيانات)", pick_client:"يرجى اختيار عميل.",
+  compliance_q:"استبيانات الامتثال", start_kyc:"+ استبيان KYC", start_ac:"+ استبيان القبول والاستمرار", no_questionnaires:"لا توجد استبيانات بعد.",
+  applies_group:"ينطبق على جميع الكيانات ({n})", placeholder_note:"أسئلة مؤقتة — سيتم استبدالها بنموذج مور مصر المعتمد.",
+  details_ph:"التفاصيل / التوضيح", add_row:"+ إضافة صف", supporting_docs:"المستندات المؤيدة", doc_type:"نوع المستند",
+  no_docs:"لم يتم رفع مستندات بعد.", upload_btn:"رفع", pick_file:"يرجى اختيار ملف أولاً.",
+  save_draft:"حفظ كمسودة", submit_approval:"تقديم للاعتماد", delete_draft:"حذف المسودة",
+  completion_date:"تاريخ الاستكمال", approve_btn:"اعتماد", return_comment:"سبب الإعادة", return_ph:"ما المطلوب تعديله؟", return_btn:"إعادة للتعديل",
+  cannot_self_approve:"أنت من أعدّ أو قدّم هذا الاستبيان، لذا يجب أن يعتمده مسؤول امتثال آخر.",
+  awaiting_officer:"تم التقديم — بانتظار اعتماد مسؤول الامتثال.", returned_note:"أعاده مسؤول الامتثال:",
+  a_missing_required:"يرجى استكمال الأسئلة المطلوبة التالية قبل التقديم:", a_confirm_submit:"تقديم هذا الاستبيان لمسؤول الامتثال للاعتماد؟ لن تتمكن من تعديله أثناء المراجعة.",
+  submitted_ok:"✓ تم التقديم للاعتماد", saved_ok:"✓ تم حفظ المسودة", a_delete_draft:"حذف مسودة هذا الاستبيان ومستنداتها؟",
+  a_confirm_approve:"اعتماد استبيان {what}؟ سيتم تحديد الاستكمال بتاريخ {d} لعدد {n} كيان.",
+  a_client_not_updated:"تم الاعتماد، لكن تعذّر تحديث بيانات العميل: ", approved_ok:"✓ تم الاعتماد — وتحديث سجل العميل",
+  a_comment_required:"يرجى توضيح المطلوب تعديله.", via_questionnaire:"يُستكمل من خلال استبيان امتثال معتمد",
+  new_group:"+ مجموعة جديدة",new_group_title:"مجموعة جديدة", edit_group:"تعديل المجموعة", l_group_code:"كود المجموعة *", group_code_ph:"مثال: GRP-001",
+  l_group_name:"اسم المجموعة *", save_group:"حفظ المجموعة", l_group:"المجموعة", no_group:"— بدون مجموعة —", members_search_ph:"ابحث عن عميل…",
+  grp_status:"{n} من {total}: {s}", n_entities:"{n} كيانات", rank_by:"الترتيب حسب:", rank_groups:"المجموعة", rank_entities:"الكيان",
+  n_up_to_date:"{ok} من {n} كيانات مكتملة", completed_on:"تاريخ الاستكمال", mark_all_done:"تحديد كمكتمل لجميع الكيانات ({n})",
+  group_word:"مجموعة", manage_members:"إضافة / إزالة كيانات", group_revenue:"إيراد المجموعة", group_onboarding:"إجراءات قبول المجموعة — الاستكمال لجميع الكيانات",
+  group_tick_hint:"يتم نسخ الاستكمال والتاريخ إلى كل كيان في المجموعة، ويمكن تعديل أي كيان منفردًا من صفحته.",
+  group_members:"كيانات هذه المجموعة", ac_short:"القبول والاستمرار", group_empty:"لا توجد كيانات بعد — اضغط «إضافة / إزالة كيانات».",
+  a_confirm_group_tick:"تحديد {what} كمكتمل بتاريخ {d} لجميع الكيانات ({n}) في هذه المجموعة؟", done_n:"✓ تم تحديث {n} كيانات",
+  a_group_required:"كود المجموعة واسمها مطلوبان.", a_group_dup:"الكود «{c}» مستخدم لمجموعة أخرى.",
+  a_delete_group:"حذف المجموعة {g}؟ ستبقى الكيانات ولكن بدون مجموعة.", m_members:"كيانات {g}",
+  n_selected:"تم اختيار {n}", in_group:"حاليًا في {g}", plus_more:"(+{n} أخرى)", n_of_entities:"{n} من {total} كيانات", open_group:"فتح المجموعة",
+  tab_alerts:"التنبيهات",al_eng_overdue:"تكليفات مراجعة متأخرة", al_eng_soon:"تكليفات مراجعة مستحقة خلال {n} يومًا", al_kyc:"KYC / إجراءات قبول العميل",
+  al_ac:"قبول العميل واستمراره", al_nodue:"تكليفات مراجعة مفتوحة بدون تاريخ استحقاق", due_audit_only:"تُتابع المواعيد النهائية لتكليفات المراجعة والفحص المحدود والإجراءات المتفق عليها.", al_none:"لا توجد تنبيهات هنا.",
+  th_due:"تاريخ الاستحقاق", th_days_over:"أيام التأخير", th_days_left:"الأيام المتبقية", th_issue:"الملاحظة", th_last_review:"آخر استكمال", th_next_due:"الاستحقاق التالي",
+  l_due_date:"تاريخ الاستحقاق", l_ac_completed:"تم استكمال قبول العميل واستمراره", l_ac_date:"تاريخ القبول والاستمرار", ac_next:"الاستحقاق التالي للقبول والاستمرار",
+  rn_ac_incomplete:"لم يُستكمل قبول العميل واستمراره", rn_ac_overdue:"تجاوز موعد القبول والاستمرار (استحق {d})", rn_ac_soon:"تجديد القبول والاستمرار مستحق {d}",
+  l_ac_interval:"تجديد القبول والاستمرار كل (أشهر)", l_ac_warn:"التنبيه قبل تجديد القبول والاستمرار (أشهر)",
+  tab_by_partner:"العملاء حسب الشريك", tab_by_manager:"العملاء حسب المدير", by_partner:"التكليفات حسب شريك التكليف", by_manager:"التكليفات حسب مدير التكليف",
   th_person:"الاسم", th_clients_n:"العملاء", not_assigned:"غير محدد", no_eng_period:"لا توجد تكليفات لهذه الفترة.",
   l_eng_partner:"شريك التكليف", l_eng_manager:"مدير التكليف", not_set:"— غير محدد —", former_user:"(مستخدم سابق)",
   eng_partner_short:"الشريك", eng_manager_short:"المدير",
@@ -395,7 +552,9 @@ const I18N={
   users_hint:"«بدون صلاحية» يمنع المستخدم. مديرو التدقيق يحتاجون أيضاً إلى إسناد عملاء (قائمة العملاء ← إسناد). لا يمكنك تغيير صلاحيتك بنفسك (إجراء وقائي).",
   role_partner:"شريك (صلاحيات كاملة)", role_finance:"المالية", role_office_admin:"إداري (بدون بيانات مالية)",
   role_manager:"مدير تدقيق (محفظته فقط)", role_none:"بدون صلاحية",
+  role_compliance:"موظف امتثال (KYC، بدون بيانات مالية)", role_compliance_officer:"مسؤول الامتثال (يعتمد KYC والقبول والاستمرار)",
   rs_partner:"شريك", rs_finance:"المالية", rs_office_admin:"إداري", rs_manager:"مدير تدقيق", rs_none:"بدون صلاحية",
+  rs_compliance:"امتثال", rs_compliance_officer:"مسؤول الامتثال",
   a_email_pass:"أدخل بريدك وكلمة المرور.", a_signin_failed:"فشل تسجيل الدخول.", a_account_created:"تم إنشاء الحساب — جارٍ تسجيل دخولك…",
   a_client_required:"اسم العميل مطلوب.", a_eng_required:"خط الخدمة والسنة مطلوبان.",
   a_valid_email:"أدخل بريداً إلكترونياً صحيحاً.", a_could_not_add:"تعذّر الإضافة: ", a_could_not_save:"تعذّر الحفظ: ",
@@ -407,20 +566,34 @@ function t(k,v){let s=(I18N[state.lang]&&I18N[state.lang][k])!=null?I18N[state.l
 
 /* ============ STATE ============ */
 let state={user:null,role:'none',profile:null,lang:(()=>{try{return localStorage.getItem('crt_lang')||'en'}catch(e){return 'en'}})()};
-let data={clients:[],engagements:[],rates:{},profiles:[],assignments:[],invites:[],policy:{},staff:[]};
+let data={clients:[],engagements:[],rates:{},profiles:[],assignments:[],invites:[],policy:{},staff:[],groups:[]};
 let peopleYear=null; // null = current year; 'all' = every year
 const peopleOpen=new Set();
 let authMode='signin';
 let viewClientId=null;
+let viewGroupId=null;
+let viewReviewId=null; let reviewWorking=null; // unsaved questionnaire answers kept across re-renders
+let complianceLanded=false;
+let rankMode='group'; // Client ranking: 'group' rolls entities up into their group, 'entity' ranks each client
+const rankOpen=new Set(); let memberSel=new Set();
 let clientYearFilter=null; // null = current year default; 'all' = show every year
 
 const CAP={
-  seeFinancials:['partner','finance','manager'], allClients:['partner','finance','office_admin'],
+  seeFinancials:['partner','finance','manager'], allClients:['partner','finance','office_admin','compliance','compliance_officer'],
   manageRates:['partner','finance'], manageUsers:['partner'], assignClients:['partner','office_admin'],
-  editClients:['partner','finance','office_admin'], addClients:['partner','finance','office_admin'],
+  editClients:['partner','finance','office_admin','compliance','compliance_officer'], addClients:['partner','finance','office_admin','compliance','compliance_officer'],
   seeDashboard:['partner'],
 };
-function can(c){return (CAP[c]||[]).includes(state.role)}
+// KYC questionnaire permissions are per person (Settings tick-boxes), not per role
+function kycPrep(){const p=state.profile||{};return !!(p.kyc_prepare||p.kyc_approve)}
+function kycSign(){return !!(state.profile||{}).kyc_approve}
+function can(c){
+  if(c==='doCompliance') return kycPrep();                                   // prepare questionnaires, upload documents
+  if(c==='approveCompliance') return kycSign();                              // sign off: approve / return
+  if(c==='viewCompliance') return state.role==='partner'||kycPrep();         // see questionnaires & KYC documents
+  if(c==='manualCompliance') return ['partner','finance','office_admin'].includes(state.role)||kycSign(); // tick KYC/A&C directly
+  return (CAP[c]||[]).includes(state.role);
+}
 const INDUSTRIES=['Agriculture','Automotive','Banking','Financial services (non-bank)','Insurance','Construction & contracting','Real estate','Education','Energy & utilities','Oil & gas','Food & beverage','Healthcare & pharmaceuticals','Hospitality & tourism','Manufacturing','Media & advertising','Mining','Non-profit / NGO','Professional services','Public sector / government','Retail & wholesale','Technology & IT','Telecommunications','Transportation & logistics','Other'];
 function fillIndustries(selected){
   const sel=$('cIndustry'), cur=selected||'';
@@ -458,7 +631,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{el.setAttribute('title',t(el.getAttribute('data-i18n-title')));});
   document.querySelectorAll('.langbtn,.langlink').forEach(b=>b.textContent=ar?'English':'العربية');
   updateAuthTexts();
-  if(!$('appView').classList.contains('hidden')){ setupChrome(); renderAll(); if(viewClientId)renderClient(); }
+  if(!$('appView').classList.contains('hidden')){ setupChrome(); renderAll(); rerenderDetail(); }
 }
 
 /* ============ AUTH ============ */
@@ -516,6 +689,12 @@ async function loadAll(){
   if(can('manageUsers')){const iv=await sb.from('invited_roles').select('*'); data.invites=iv.data||[];}
   if(can('assignClients')){const cm=await sb.from('client_managers').select('*'); data.assignments=cm.data||[];}
   {const sd=await sb.rpc('staff_directory'); data.staff=sd.data||[];}
+  {const gr=await sb.from('client_groups').select('*').order('group_code'); data.groups=gr.data||[];}
+  {const ud=await sb.rpc('user_directory'); data.people=ud.data||[];}
+  if(can('viewCompliance')){
+    const [rv,dc]=await Promise.all([sb.from('compliance_reviews').select('*').order('updated_at',{ascending:false}),sb.from('compliance_documents').select('*').order('uploaded_at')]);
+    data.reviews=rv.data||[]; data.docs=dc.data||[];
+  } else {data.reviews=[]; data.docs=[];}
 }
 
 /* ============ CHROME ============ */
@@ -523,10 +702,15 @@ function setupChrome(){
   $('whoEmail').textContent=state.user.email;
   $('whoRole').textContent=t('rs_'+state.role);
   $('btnAddClient').classList.toggle('hidden',!can('addClients'));
+  $('btnAddGroup').classList.toggle('hidden',!can('editClients'));
   $('btnRates').classList.toggle('hidden',!can('manageRates'));
   $('btnUsers').classList.toggle('hidden',!can('manageUsers'));
   $('tabUsers').classList.toggle('hidden',!can('manageUsers'));
-  $('tabPeople').classList.toggle('hidden',!can('seeDashboard'));
+  $('tabCompliance').classList.toggle('hidden',!can('viewCompliance'));
+  const complianceRole=['compliance','compliance_officer'].includes(state.role);
+  if(complianceRole&&can('doCompliance')&&!complianceLanded){complianceLanded=true;setTab('compliance');} // compliance staff land on their portal
+  $('tabPartners').classList.toggle('hidden',!can('seeDashboard'));
+  $('tabManagers').classList.toggle('hidden',!can('seeDashboard'));
   const dash=can('seeDashboard');
   $('stats').classList.toggle('hidden',!dash);
   $('tabClients').classList.toggle('hidden',!dash);
@@ -541,9 +725,20 @@ function toEGP(e){const c=clientById(e.client_id);return (Number(e.revenue)||0)*
 function clientById(id){return data.clients.find(c=>c.id===id)}
 function engForClient(id){return data.engagements.filter(e=>e.client_id===id)}
 function searchTerm(){return $('search').value.trim().toLowerCase()}
-function filteredClients(){const q=searchTerm();return data.clients.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q));}
+function filteredClients(){const q=searchTerm();return data.clients.filter(c=>{if(!q)return true;const g=groupOf(c);
+  return (c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q)||(g&&((g.name||'').toLowerCase().includes(q)||(g.group_code||'').toLowerCase().includes(q)));});}
+function groupById(id){return (data.groups||[]).find(g=>g.id===id)}
+function groupOf(c){return c&&c.group_id?groupById(c.group_id):null}
+function groupMembers(gid){return data.clients.filter(c=>c.group_id===gid)}
+function groupChip(g){return g?`<span class="gchip" onclick="event.stopPropagation();openGroup('${g.id}')" title="${esc(g.name)}">${esc(g.group_code)}</span>`:''}
+function groupStatus(members){
+  const lv=members.map(c=>clientStatus(c).level);
+  const level=lv.includes('red')?'red':lv.includes('yellow')?'yellow':'green';
+  const k={red:'st_action',yellow:'st_renewal',green:'st_ready'}[level];
+  return {level,reasons:[t('grp_status',{n:lv.filter(l=>l===level).length,total:members.length,s:t(k)})]};
+}
 function statusChip(s){s=s||'Open';return `<span class="chip ${s==='Open'?'st-open':'st-closed'}">${t(s==='Closed'?'st_closed':'st_open')}</span>`}
-function staffName(id){if(!id)return '';const s=(data.staff||[]).find(x=>x.id===id)||(data.profiles||[]).find(x=>x.id===id);return s?(s.full_name||s.email):t('former_user');}
+function staffName(id){if(!id)return '';const s=(data.staff||[]).find(x=>x.id===id)||(data.people||[]).find(x=>x.id===id)||(data.profiles||[]).find(x=>x.id===id);return s?(s.full_name||s.email):t('former_user');}
 function fillStaff(sel,selected){
   const cur=selected||'';
   const list=(data.staff||[]).slice();
@@ -554,7 +749,7 @@ function fillStaff(sel,selected){
 function setPeopleYear(v){peopleYear=v;renderPeople();}
 function togglePerson(k){peopleOpen.has(k)?peopleOpen.delete(k):peopleOpen.add(k);renderPeople();}
 function renderPeople(){
-  const el=$('peopleTable'); if(!el)return;
+  if(!$('partnersTable'))return;
   const nowY=new Date().getFullYear();
   const yset=new Set(data.engagements.map(e=>e.year).filter(Boolean)); yset.add(nowY);
   const years=[...yset].sort((a,b)=>b-a);
@@ -576,8 +771,9 @@ function renderPeople(){
       :`<tr><td colspan="6"><div class="empty">${t('no_eng_period')}</div></td></tr>`;
     return `<div class="panel" style="margin-bottom:16px"><h3>${title}</h3><table><thead><tr><th class="rank">#</th><th>${t('th_person')}</th><th class="num">${t('th_engagements')}</th><th class="num">${t('open_word')}</th><th class="num">${t('th_clients_n')}</th><th class="num">${t('th_revenue_egp')}</th></tr></thead><tbody>${body}</tbody></table></div>`;
   };
-  el.innerHTML=`<div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:10px;font-size:12.5px;font-weight:600">${t('l_view_year')} ${yearSel}</div>`
-    +section('p','engagement_partner',t('by_partner'))+section('m','engagement_manager',t('by_manager'));
+  const yearBar=`<div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:10px;font-size:12.5px;font-weight:600">${t('l_view_year')} ${yearSel}</div>`;
+  $('partnersTable').innerHTML=yearBar+section('p','engagement_partner',t('by_partner'));
+  $('managersTable').innerHTML=yearBar+section('m','engagement_manager',t('by_manager'));
 }
 function personEngs(list){
   return `<table><thead><tr><th>${t('th_client')}</th><th>${t('th_service_line')}</th><th class="num">${t('th_year')}</th><th>${t('th_status')}</th><th class="num">${t('th_revenue_egp')}</th></tr></thead><tbody>${
@@ -606,20 +802,107 @@ function fmtDate(iso){if(!iso)return '—';const p=(iso||'').split('-');return p
 function kycInterval(){return Number((data.policy||{}).kyc_interval_months)||36}
 function kycWarn(){return Number((data.policy||{}).kyc_warning_months)||6}
 function clientNextDue(c){return (c.kyc_completed&&c.kyc_last_review)?addMonths(c.kyc_last_review,kycInterval()):null}
+function acInterval(){return Number((data.policy||{}).ac_interval_months)||12}
+function acWarn(){const v=(data.policy||{}).ac_warning_months;return (v==null||v==='')?1:Number(v)}
+function clientAcDue(c){return (c.ac_completed&&c.ac_date)?addMonths(c.ac_date,acInterval()):null}
+function addDays(iso,n){const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function daysBetween(a,b){return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000)}
+const DUE_SOON_DAYS=30;
+// Fixed service lines, grouped by department. deadline:true = gets due dates + Alerts (audit-type work only;
+// other departments will run their own trackers).
+const SERVICE_GROUPS=[
+  {dept:'Audit & Assurance',services:[
+    {name:'Statutory / FS audit',deadline:true},
+    {name:'Review engagement',deadline:true},
+    {name:'Special-purpose audit / AUP',deadline:true}]},
+  {dept:'Tax',services:[{name:'Corporate tax'},{name:'VAT'},{name:'Tax advisory'},{name:'Transfer pricing'}]},
+  {dept:'Advisory',services:[{name:'Internal audit'},{name:'Advisory / consulting'},{name:'Valuation'},{name:'Due diligence'}]},
+  {dept:'Outsourcing',services:[{name:'Accounting & bookkeeping'},{name:'Payroll'}]},
+  {dept:'Other',services:[{name:'Other'}]},
+];
+const DEADLINE_SERVICES=SERVICE_GROUPS.flatMap(g=>g.services.filter(s=>s.deadline).map(s=>s.name));
+function isDeadlineService(s){return DEADLINE_SERVICES.includes(s)}
+function fillServices(sel,selected){
+  const cur=selected||'';
+  const known=SERVICE_GROUPS.some(g=>g.services.some(s=>s.name===cur));
+  sel.innerHTML='<option value="">'+t('opt_select')+'</option>'
+    +SERVICE_GROUPS.map(g=>`<optgroup label="${esc(g.dept)}">${g.services.map(s=>`<option${s.name===cur?' selected':''}>${esc(s.name)}</option>`).join('')}</optgroup>`).join('')
+    +(cur&&!known?`<option selected>${esc(cur)}</option>`:''); // keep any older free-text value
+  sel.value=cur;
+}
+function updateDueVisibility(){
+  const on=isDeadlineService($('eService').value);
+  $('eDueWrap').classList.toggle('hidden',!on); $('eDueHint').classList.toggle('hidden',!on);
+}
+// KYC and A&C checks shared by the readiness light and the Alerts tab
+function complianceIssues(c){
+  const today=todayISO(), kycDue=clientNextDue(c), acDue=clientAcDue(c), out=[];
+  if(!c.kyc_completed||!c.kyc_last_review) out.push({kind:'kyc',level:'red',text:t('rn_kyc_incomplete'),last:c.kyc_last_review,due:null});
+  else if(kycDue<today) out.push({kind:'kyc',level:'red',text:t('rn_kyc_overdue',{d:fmtDate(kycDue)}),last:c.kyc_last_review,due:kycDue});
+  else if(kycDue<=addMonths(today,kycWarn())) out.push({kind:'kyc',level:'yellow',text:t('rn_renewal_soon',{d:fmtDate(kycDue)}),last:c.kyc_last_review,due:kycDue});
+  if(!c.ac_completed||!c.ac_date) out.push({kind:'ac',level:'red',text:t('rn_ac_incomplete'),last:c.ac_date,due:null});
+  else if(acDue<today) out.push({kind:'ac',level:'red',text:t('rn_ac_overdue',{d:fmtDate(acDue)}),last:c.ac_date,due:acDue});
+  else if(acDue<=addMonths(today,acWarn())) out.push({kind:'ac',level:'yellow',text:t('rn_ac_soon',{d:fmtDate(acDue)}),last:c.ac_date,due:acDue});
+  return out;
+}
 function clientStatus(c){
-  const engs=engForClient(c.id); const reasons=[]; const today=todayISO(); const nextDue=clientNextDue(c);
-  if(!c.kyc_completed||!c.kyc_last_review) reasons.push(t('rn_kyc_incomplete'));
-  else if(nextDue && nextDue<today) reasons.push(t('rn_kyc_overdue',{d:fmtDate(nextDue)}));
+  const engs=engForClient(c.id); const nextDue=clientNextDue(c); const issues=complianceIssues(c);
+  const reasons=issues.filter(i=>i.level==='red').map(i=>i.text);
   engs.filter(e=>!e.letter_signed).forEach(e=>reasons.push(t('rn_letter_unsigned',{s:e.service_line||'—'})));
   if(reasons.length) return {level:'red',reasons,nextDue};
-  if(nextDue && nextDue<=addMonths(today,kycWarn())) return {level:'yellow',reasons:[t('rn_renewal_soon',{d:fmtDate(nextDue)})],nextDue};
+  const soon=issues.filter(i=>i.level==='yellow').map(i=>i.text);
+  if(soon.length) return {level:'yellow',reasons:soon,nextDue};
   return {level:'green',reasons:[t('rn_ready')],nextDue};
+}
+function computeAlerts(){
+  const today=todayISO(), soonTo=addDays(today,DUE_SOON_DAYS), q=searchTerm();
+  const match=cid=>{if(!q)return true;const c=clientById(cid)||{};return (c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q);};
+  const open=data.engagements.filter(e=>(e.status||'Open')==='Open'&&isDeadlineService(e.service_line)&&match(e.client_id));
+  const overdue=open.filter(e=>e.due_date&&e.due_date<today).map(e=>({e,days:daysBetween(e.due_date,today)})).sort((a,b)=>b.days-a.days);
+  const soon=open.filter(e=>e.due_date&&e.due_date>=today&&e.due_date<=soonTo).map(e=>({e,days:daysBetween(today,e.due_date)})).sort((a,b)=>a.days-b.days);
+  const noDue=open.filter(e=>!e.due_date);
+  const kyc=[],ac=[];
+  data.clients.filter(c=>match(c.id)).forEach(c=>complianceIssues(c).forEach(i=>(i.kind==='kyc'?kyc:ac).push({c,...i})));
+  const bySeverity=(a,b)=>(a.level===b.level?0:a.level==='red'?-1:1)||String(a.due||'').localeCompare(String(b.due||''));
+  // Entities in a group collapse into one row per group (KYC/A&C is ticked off per group)
+  const rollUp=list=>{const out=[],byG={};
+    list.forEach(x=>{const g=groupOf(x.c); if(g)(byG[g.id]=byG[g.id]||{g,items:[]}).items.push(x); else out.push(x);});
+    Object.values(byG).forEach(({g,items})=>{const texts=[...new Set(items.map(i=>i.text))];
+      out.push({group:g,level:items.some(i=>i.level==='red')?'red':'yellow',n:items.length,total:groupMembers(g.id).length,
+        text:texts[0]+(texts.length>1?' '+t('plus_more',{n:texts.length-1}):''),
+        last:items.map(i=>i.last).filter(Boolean).sort()[0]||null,due:items.map(i=>i.due).filter(Boolean).sort()[0]||null});});
+    return out;};
+  kyc.splice(0,kyc.length,...rollUp(kyc)); ac.splice(0,ac.length,...rollUp(ac));
+  kyc.sort(bySeverity); ac.sort(bySeverity);
+  const red=overdue.length+kyc.filter(x=>x.level==='red').length+ac.filter(x=>x.level==='red').length;
+  const amber=soon.length+kyc.filter(x=>x.level==='yellow').length+ac.filter(x=>x.level==='yellow').length;
+  return {overdue,soon,noDue,kyc,ac,red,amber};
+}
+function renderAlerts(){
+  const el=$('alertsTable'); if(!el)return;
+  const A=computeAlerts();
+  const b=$('alertBadge'); if(b){const n=A.red+A.amber; b.textContent=n; b.classList.toggle('hidden',!n); b.classList.toggle('amber',!A.red);}
+  const dot=l=>`<span class="statusdot" style="background:${{red:'#d64352',yellow:'#e0a81e',grey:'#9aa4b8'}[l]};margin-inline-end:8px;vertical-align:-1px"></span>`;
+  const clientCell=c=>`<span class="linkname" onclick="openClient('${c.id}')">${esc(c.name||'—')}</span> <span class="code">#${c.client_code}</span>`;
+  const panel=(level,title,count,body)=>`<div class="panel" style="margin-bottom:16px"><h3>${dot(level)}${title} <span class="hint">(${count})</span></h3>${count?body:`<div class="empty">${t('al_none')}</div>`}</div>`;
+  const engTable=(list,daysLbl)=>`<table><thead><tr><th>${t('th_client')}</th><th>${t('th_service_line')}</th><th class="num">${t('th_year')}</th><th>${t('th_due')}</th>${daysLbl?`<th class="num">${t(daysLbl)}</th>`:''}<th>${t('eng_partner_short')}</th><th>${t('eng_manager_short')}</th><th></th></tr></thead><tbody>${
+    list.map(x=>{const e=x.e||x;const c=clientById(e.client_id)||{};return `<tr><td>${clientCell(c)}</td><td><span class="chip">${esc(e.service_line||'—')}</span></td><td class="num">${esc(e.year||'')}</td><td>${fmtDate(e.due_date)}</td>${daysLbl?`<td class="num">${x.days}</td>`:''}<td>${esc(staffName(e.engagement_partner)||'—')}</td><td>${esc(staffName(e.engagement_manager)||'—')}</td><td class="rowact"><button onclick="openEngModal('${e.client_id}','${e.id}')">${t('edit')}</button></td></tr>`;}).join('')}</tbody></table>`;
+  const compTable=list=>`<table><thead><tr><th></th><th>${t('th_client')}</th><th>${t('th_issue')}</th><th>${t('th_last_review')}</th><th>${t('th_next_due')}</th><th></th></tr></thead><tbody>${
+    list.map(x=>x.group
+      ?`<tr><td>${dot(x.level)}</td><td><span class="linkname" onclick="openGroup('${x.group.id}')">${esc(x.group.name)}</span> ${groupChip(x.group)}<div class="sub2">${t('n_of_entities',{n:x.n,total:x.total})}</div></td><td>${esc(x.text)}</td><td>${fmtDate(x.last)}</td><td>${fmtDate(x.due)}</td><td class="rowact"><button onclick="openGroup('${x.group.id}')">${t('open_group')}</button></td></tr>`
+      :`<tr><td>${dot(x.level)}</td><td>${clientCell(x.c)}</td><td>${esc(x.text)}</td><td>${fmtDate(x.last)}</td><td>${fmtDate(x.due)}</td><td class="rowact">${can('editClients')?`<button onclick="openClientModal('${x.c.id}')">${t('edit')}</button>`:''}</td></tr>`).join('')}</tbody></table>`;
+  el.innerHTML=
+     panel('red',t('al_eng_overdue'),A.overdue.length,engTable(A.overdue,'th_days_over'))
+    +panel('yellow',t('al_eng_soon',{n:DUE_SOON_DAYS}),A.soon.length,engTable(A.soon,'th_days_left'))
+    +panel(A.kyc.some(x=>x.level==='red')?'red':'yellow',t('al_kyc'),A.kyc.length,compTable(A.kyc))
+    +panel(A.ac.some(x=>x.level==='red')?'red':'yellow',t('al_ac'),A.ac.length,compTable(A.ac))
+    +panel('grey',t('al_nodue'),A.noDue.length,engTable(A.noDue,null));
 }
 function statusDot(st){const col={red:'#d64352',yellow:'#e0a81e',green:'#16b685'}[st.level];return `<span class="statusdot" style="background:${col}" title="${esc(st.reasons.join(' · '))}"></span>`}
 function statusCell(c){const st=clientStatus(c);return `<div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0]||'')}</span></div>`}
 
 /* ============ RENDER ============ */
-function renderAll(){ if(can('seeDashboard')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); if(can('manageUsers'))renderUsers(); }
+function renderAll(){ if(can('seeDashboard')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('manageUsers'))renderUsers(); }
 
 function renderStats(){
   const el=$('stats'); const clients=data.clients.length;
@@ -639,20 +922,47 @@ function renderStats(){
     <div class="card"><div class="lbl">${t('avg_client')}</div><div class="val">${clients?money(total/clients):money(0)}</div><div class="sub">${t('mean_revenue')}</div></div>`;
 }
 
+function setRankMode(m){rankMode=m;renderClients();}
+function toggleRankGroup(id){rankOpen.has(id)?rankOpen.delete(id):rankOpen.add(id);renderClients();}
+function clientRankRow(c){const eng=engForClient(c.id);return {c,total:eng.reduce((s,e)=>s+toEGP(e),0),count:eng.length,services:[...new Set(eng.map(e=>e.service_line).filter(Boolean))]};}
 function renderClients(){
-  const el=$('clientsTable');
-  let list=filteredClients().map(c=>{const eng=engForClient(c.id);return {c,total:eng.reduce((s,e)=>s+toEGP(e),0),count:eng.length,services:[...new Set(eng.map(e=>e.service_line).filter(Boolean))]};});
-  const fin=can('seeFinancials');
-  if(fin) list.sort((a,b)=>b.total-a.total); else list.sort((a,b)=>a.c.client_code-b.c.client_code);
-  if(!list.length){el.innerHTML='<div class="empty">'+t('no_clients_yet')+(can('addClients')?' '+t('click_add_client'):'')+'</div>';return}
-  el.innerHTML=`<table><thead><tr><th class="rank">#</th><th>${t('th_readiness')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th>${fin?'<th class="num">'+t('th_total_rev')+'</th>':''}<th class="num">${t('th_engagements')}</th><th>${t('th_service_lines')}</th></tr></thead><tbody>${
-    list.map((r,i)=>`<tr><td class="rank ${i<3&&fin?'top':''}">${fin?i+1:''}</td>
+  const el=$('clientsTable'); const fin=can('seeFinancials');
+  const clients=filteredClients();
+  const toggle=`<div class="rankmode" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:10px 16px 0;font-size:12.5px;font-weight:600">${t('rank_by')}
+    <button class="${rankMode==='group'?'primary':''}" onclick="setRankMode('group')">${t('rank_groups')}</button>
+    <button class="${rankMode==='entity'?'primary':''}" onclick="setRankMode('entity')">${t('rank_entities')}</button></div>`;
+  if(!clients.length){el.innerHTML=toggle+'<div class="empty">'+t('no_clients_yet')+(can('addClients')?' '+t('click_add_client'):'')+'</div>';return}
+  // Build ranking units: one per group (entities rolled up) or one per client
+  let units;
+  if(rankMode==='group'){
+    const byGroup={}; units=[];
+    clients.forEach(c=>{const g=groupOf(c); if(g){(byGroup[g.id]=byGroup[g.id]||{g,members:[]}).members.push(c);} else units.push({type:'client',...clientRankRow(c)});});
+    Object.values(byGroup).forEach(({g,members})=>{const rows=members.map(clientRankRow);
+      units.push({type:'group',g,rows,members,total:rows.reduce((s,r)=>s+r.total,0),count:rows.reduce((s,r)=>s+r.count,0),services:[...new Set(rows.flatMap(r=>r.services))]});});
+  } else units=clients.map(c=>({type:'client',...clientRankRow(c)}));
+  const codeOf=u=>u.type==='group'?(u.g.group_code||''):String(u.c.client_code);
+  if(fin) units.sort((a,b)=>b.total-a.total); else units.sort((a,b)=>codeOf(a).localeCompare(codeOf(b),undefined,{numeric:true}));
+  const svcChips=s=>s.map(x=>`<span class="chip">${esc(x)}</span>`).join('');
+  const clientRow=(r,rank,indent)=>`<tr${indent?' style="background:var(--brand-soft)"':''}><td class="rank ${!indent&&rank<=3&&fin?'top':''}">${fin&&!indent?rank:''}</td>
       <td>${statusCell(r.c)}</td>
       <td class="code">${r.c.client_code}</td>
-      <td><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span><div class="sub2">${[r.c.industry,ctStr(r.c.client_types),r.c.legal_structure,r.c.contract_currency].filter(Boolean).map(esc).join(' · ')}</div></td>
+      <td${indent?' style="padding-inline-start:28px"':''}><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span>${indent?'':groupChip(groupOf(r.c))}<div class="sub2">${[r.c.industry,ctStr(r.c.client_types),r.c.legal_structure,r.c.contract_currency].filter(Boolean).map(esc).join(' · ')}</div></td>
       ${fin?`<td class="num money">${money(r.total)}</td>`:''}
       <td class="num">${r.count}</td>
-      <td>${r.services.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</td></tr>`).join('')}</tbody></table>`;
+      <td>${svcChips(r.services)}</td></tr>`;
+  const body=units.map((u,i)=>{
+    if(u.type==='client') return clientRow(u,i+1,false);
+    const st=groupStatus(u.members), isOpen=rankOpen.has(u.g.id);
+    const head=`<tr><td class="rank ${i<3&&fin?'top':''}">${fin?i+1:''}</td>
+      <td><div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0])}</span></div></td>
+      <td class="code">${esc(u.g.group_code)}</td>
+      <td><span class="linkname" onclick="toggleRankGroup('${u.g.id}')">${isOpen?'▾':'▸'}</span> <span class="linkname" onclick="openGroup('${u.g.id}')">${esc(u.g.name)}</span> <span class="hint">${t('n_entities',{n:u.members.length})}</span></td>
+      ${fin?`<td class="num money">${money(u.total)}</td>`:''}
+      <td class="num">${u.count}</td>
+      <td>${svcChips(u.services)}</td></tr>`;
+    return head+(isOpen?u.rows.sort((a,b)=>fin?b.total-a.total:a.c.client_code-b.c.client_code).map(r=>clientRow(r,0,true)).join(''):'');
+  }).join('');
+  el.innerHTML=toggle+`<table><thead><tr><th class="rank">#</th><th>${t('th_readiness')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th>${fin?'<th class="num">'+t('th_total_rev')+'</th>':''}<th class="num">${t('th_engagements')}</th><th>${t('th_service_lines')}</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 function renderEng(){
@@ -680,15 +990,15 @@ function renderList(){
       <td>${ctChips(c.client_types)}</td>
       <td>${svc.length?svc.map(s=>`<span class="chip">${esc(s)}</span>`).join(''):'—'}</td>
       <td class="code">${c.client_code}</td>
-      <td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span></td>
+      <td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span>${groupChip(groupOf(c))}</td>
       <td class="num">${engForClient(c.id).length}</td>
       <td class="rowact">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit')}</button>`:''}${assign?`<button onclick="openAssign('${c.id}')">${t('assign')}</button>`:''}</td></tr>`;}).join('')}</tbody></table>`;
 }
 
 /* ---- client page ---- */
-function openClient(id){viewClientId=id;clientYearFilter=null;$('mainView').classList.add('hidden');$('clientView').classList.remove('hidden');renderClient();window.scrollTo(0,0);}
+function openClient(id){viewClientId=id;viewGroupId=null;viewReviewId=null;clientYearFilter=null;$('mainView').classList.add('hidden');$('clientView').classList.remove('hidden');renderClient();window.scrollTo(0,0);}
 function setClientYear(v){clientYearFilter=v;renderClient();}
-function closeClient(){viewClientId=null;$('clientView').classList.add('hidden');$('mainView').classList.remove('hidden');}
+function closeClient(){viewClientId=null;viewGroupId=null;viewReviewId=null;reviewWorking=null;$('clientView').classList.add('hidden');$('mainView').classList.remove('hidden');}
 function renderClient(){
   const c=clientById(viewClientId); if(!c){closeClient();return}
   const fin=can('seeFinancials'); const ccy=c.contract_currency||'EGP'; const rate=rateFor(ccy); const fx=ccy!=='EGP';
@@ -714,7 +1024,7 @@ function renderClient(){
   $('clientView').innerHTML=`
    <button class="backbtn" onclick="closeClient()">${t('back')}</button>
    <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-     <div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}</h2>
+     <div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
        <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract].filter(Boolean).map(esc).join(' · ')}</div>
        ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}</div>
      <div style="display:flex;gap:8px">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
@@ -727,11 +1037,20 @@ function renderClient(){
        <div class="card"><div class="lbl">${t('l_kyc_date')}</div><div class="val" style="font-size:16px">${fmtDate(c.kyc_last_review)}</div></div>
        <div class="card"><div class="lbl">${t('kyc_next')}</div><div class="val" style="font-size:16px">${fmtDate(nextDue)}</div></div>
      </div>
+     <div class="stats" style="margin:0 0 12px">
+       <div class="card"><div class="lbl">${t('l_ac_completed')}</div><div class="val" style="font-size:16px">${c.ac_completed?t('yes'):t('no')}</div></div>
+       <div class="card"><div class="lbl">${t('l_ac_date')}</div><div class="val" style="font-size:16px">${fmtDate(c.ac_date)}</div></div>
+       <div class="card"><div class="lbl">${t('ac_next')}</div><div class="val" style="font-size:16px">${fmtDate(clientAcDue(c))}</div></div>
+     </div>
      <div style="font-weight:700;margin:6px 0">${t('letters_title')}</div>
      ${eng.length?`<table><thead><tr><th class="num">${t('th_year')}</th><th>${t('th_service_line')}</th><th>${t('th_letter')}</th><th>${t('l_letter_date')}</th><th>${t('th_file')}</th></tr></thead><tbody>${lettersRows}</tbody></table>`:`<div class="hint">${t('no_eng_add')}</div>`}
      <div style="font-weight:700;margin:14px 0 4px">${t('outstanding')}</div>
      ${st.level==='green'?`<div class="hint">${t('all_clear')}</div>`:`<ul style="margin:4px 0 0;padding-inline-start:18px">${st.reasons.map(r=>'<li class="rlabel" style="font-size:12.5px">'+esc(r)+'</li>').join('')}</ul>`}
    </div></div>
+   ${can('viewCompliance')?`<div class="panel" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-inline-end:16px">
+       <h3>${t('compliance_q')}</h3>
+       ${can('doCompliance')?`<div style="display:flex;gap:8px"><button onclick="startReview('${c.id}','kyc',null)">${t('start_kyc')}</button><button onclick="startReview('${c.id}','ac',null)">${t('start_ac')}</button></div>`:''}</div>
+     ${reviewTable((data.reviews||[]).filter(r=>r.client_id===c.id||(r.group_id&&r.group_id===c.group_id)),t('no_questionnaires'))}</div>`:''}
    ${fin?`<div class="stats" style="margin-top:0">
      <div class="card"><div class="lbl">${t('open_revenue')}</div><div class="val">${money(openEgp)}</div><div class="sub">${fx?moneyCcy(open.reduce((s,e)=>s+(+e.revenue||0),0),ccy):t('open_engs_sub')}</div></div>
      <div class="card"><div class="lbl">${t('lifetime_revenue')}</div><div class="val">${money(totalEgp)}</div><div class="sub">${t('n_engagements',{n:eng.length})}</div></div>
@@ -747,9 +1066,14 @@ function renderClient(){
 function engRows(list,ccy,rate,fin){
   if(!list.length)return '<div class="empty">'+t('no_eng_add')+'</div>';
   const fx=ccy!=='EGP';
-  return `<table><thead><tr><th>${t('th_service_line')}</th><th class="num">${t('th_year')}</th>${fin?'<th class="num">'+t('th_revenue_egp')+'</th>':''}<th>${t('th_status')}</th><th>${t('th_desc')}</th><th></th></tr></thead><tbody>${
+  const today=todayISO(), soonTo=addDays(today,DUE_SOON_DAYS);
+  const dueCell=e=>{if(!e.due_date)return '—';const open=(e.status||'Open')==='Open';
+    const col=open&&e.due_date<today?'#b23b3b':open&&e.due_date<=soonTo?'#8a5a00':'inherit';
+    return `<span style="color:${col};font-weight:${col==='inherit'?400:700}">${fmtDate(e.due_date)}</span>`;};
+  return `<table><thead><tr><th>${t('th_service_line')}</th><th class="num">${t('th_year')}</th><th>${t('th_due')}</th>${fin?'<th class="num">'+t('th_revenue_egp')+'</th>':''}<th>${t('th_status')}</th><th>${t('th_desc')}</th><th></th></tr></thead><tbody>${
     list.map(e=>`<tr><td><span class="chip">${esc(e.service_line||'—')}</span>${(e.billing_frequency||e.letter_file)?`<div class="sub2">${e.billing_frequency?freqLabel(e.billing_frequency):''}${(e.billing_frequency&&e.letter_file)?' · ':''}${e.letter_file?`📎 <a href="#" onclick="openLetter('${esc(e.letter_file)}');return false">${t('view_file')}</a>`:''}</div>`:''}${(e.engagement_partner||e.engagement_manager)?`<div class="sub2">${[e.engagement_partner?t('eng_partner_short')+': '+esc(staffName(e.engagement_partner)):'',e.engagement_manager?t('eng_manager_short')+': '+esc(staffName(e.engagement_manager)):''].filter(Boolean).join(' · ')}</div>`:''}</td>
       <td class="num">${esc(e.year||'')}</td>
+      <td>${dueCell(e)}</td>
       ${fin?`<td class="num money">${money((+e.revenue||0)*rate)}${fx?`<div class="sub2">${moneyCcy(e.revenue,ccy)}</div>`:''}</td>`:''}
       <td>${statusChip(e.status)}</td>
       <td>${esc(e.description||'')}</td>
@@ -759,7 +1083,7 @@ function engRows(list,ccy,rate,fin){
 }
 
 /* ---- settings / users ---- */
-function roleOptions(sel){return ['partner','finance','office_admin','manager','none'].map(r=>`<option value="${r}" ${sel===r?'selected':''}>${t('role_'+r)}</option>`).join('');}
+function roleOptions(sel){return ['partner','finance','office_admin','manager','compliance','compliance_officer','none'].map(r=>`<option value="${r}" ${sel===r?'selected':''}>${t('role_'+r)}</option>`).join('');}
 function renderUsers(){
   const el=$('usersTable'); if(!el)return;
   const pending=data.invites||[];
@@ -781,11 +1105,14 @@ function renderUsers(){
     </div>`:''}
     <div>
       <div style="font-weight:700;padding:14px 18px 6px">${t('active_users',{n:data.profiles.length})}</div>
-      <table><thead><tr><th>${t('th_name_email')}</th><th>${t('th_role')}</th><th>${t('th_active')}</th></tr></thead><tbody>${
+      <table><thead><tr><th>${t('th_name_email')}</th><th>${t('th_role')}</th><th>${t('th_active')}</th><th title="${esc(t('kyc_access_tip'))}">${t('th_kyc_access')}</th><th title="${esc(t('kyc_signoff_tip'))}">${t('th_kyc_signoff')}</th></tr></thead><tbody>${
         data.profiles.slice().sort((a,b)=>(a.email||'').localeCompare(b.email||'')).map(p=>`<tr>
           <td><strong>${esc(p.full_name||p.email)}</strong>${p.id===state.user.id?' <span class="chip">'+t('you')+'</span>':''}<div class="sub2">${esc(p.email||'')}</div></td>
           <td><select onchange="setRole('${p.id}',this.value)" ${p.id===state.user.id?'disabled':''}>${roleOptions(p.role)}</select></td>
-          <td><input type="checkbox" ${p.active?'checked':''} ${p.id===state.user.id?'disabled':''} onchange="setActive('${p.id}',this.checked)"></td></tr>`).join('')}</tbody></table>
+          <td><input type="checkbox" ${p.active?'checked':''} ${p.id===state.user.id?'disabled':''} onchange="setActive('${p.id}',this.checked)"></td>
+          <td><input type="checkbox" ${(p.kyc_prepare||p.kyc_approve)?'checked':''} ${p.kyc_approve?'disabled title="'+esc(t('signoff_implies'))+'"':''} onchange="setKycPerm('${p.id}','kyc_prepare',this.checked)"></td>
+          <td><input type="checkbox" ${p.kyc_approve?'checked':''} onchange="setKycPerm('${p.id}','kyc_approve',this.checked)"></td></tr>`).join('')}</tbody></table>
+      <div class="hint" style="padding:8px 18px">${t('kyc_perm_hint')}</div>
     </div>
     <div class="hint" style="padding:12px 18px">${t('users_hint')}</div>
     <div style="border-top:1px solid var(--line);padding:16px 18px">
@@ -793,6 +1120,8 @@ function renderUsers(){
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
         <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_interval')}</label><input id="polInterval" type="number" min="1" value="${kycInterval()}" style="width:130px"></div>
         <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_warnmonths')}</label><input id="polWarn" type="number" min="0" value="${kycWarn()}" style="width:130px"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_ac_interval')}</label><input id="polAcInterval" type="number" min="1" value="${acInterval()}" style="width:130px"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_ac_warn')}</label><input id="polAcWarn" type="number" min="0" value="${acWarn()}" style="width:130px"></div>
         <button class="primary" onclick="savePolicy()">${t('save_policy')}</button>
         <span class="hint" id="polMsg"></span>
       </div>
@@ -800,7 +1129,9 @@ function renderUsers(){
 }
 async function savePolicy(){
   const iv=parseInt($('polInterval').value)||36; const wn=parseInt($('polWarn').value); const w=isNaN(wn)?6:wn;
-  const {error}=await sb.from('app_settings').upsert([{key:'kyc_interval_months',value:String(iv)},{key:'kyc_warning_months',value:String(w)}]);
+  const aiv=parseInt($('polAcInterval').value)||12; const awn=parseInt($('polAcWarn').value); const aw=isNaN(awn)?1:awn;
+  const {error}=await sb.from('app_settings').upsert([{key:'kyc_interval_months',value:String(iv)},{key:'kyc_warning_months',value:String(w)},
+    {key:'ac_interval_months',value:String(aiv)},{key:'ac_warning_months',value:String(aw)}]);
   if(error){$('polMsg').textContent=t('a_could_not_save')+error.message;return}
   await refresh(); if($('polMsg'))$('polMsg').textContent='✓';
 }
@@ -817,16 +1148,29 @@ async function inviteUser(){
 async function removeInvite(email){await sb.from('invited_roles').delete().eq('email',email);await refresh();}
 async function setRole(id,role){await sb.from('profiles').update({role}).eq('id',id);await refresh();}
 async function setActive(id,active){await sb.from('profiles').update({active}).eq('id',id);await refresh();}
+async function setKycPerm(id,field,on){
+  const {error}=await sb.from('profiles').update({[field]:on}).eq('id',id);
+  if(error){alert(t('a_could_not_save')+error.message);await refresh();return}
+  if(state.user&&id===state.user.id&&state.profile){state.profile[field]=on;} // your own access changes straight away
+  await refresh(); setupChrome();
+}
 
 /* ============ CRUD ============ */
 function openClientModal(id){
   const c=id?clientById(id):null;
   $('clientModalTitle').textContent=id?t('m_edit_client'):t('m_add_client');
   $('cName').value=c?c.name:''; fillIndustries(c?c.industry||'':'');
+  const gsel=$('cGroup'), gcur=c?c.group_id||'':'';
+  gsel.innerHTML='<option value="">'+t('no_group')+'</option>'+(data.groups||[]).map(g=>`<option value="${g.id}"${g.id===gcur?' selected':''}>${esc(g.group_code)} — ${esc(g.name)}</option>`).join('');
+  gsel.value=gcur;
   const ctset=new Set((c&&c.client_types)||[]);
   document.querySelectorAll('#cTypeBox input').forEach(cb=>cb.checked=ctset.has(cb.value));
   $('cLegal').value=c?c.legal_structure||'':''; $('cCurrency').value=c?c.contract_currency||'EGP':'EGP';
   $('cKyc').value=(c&&c.kyc_completed)?'yes':'no'; $('cKycDate').value=c?c.kyc_last_review||'':'';
+  $('cAc').value=(c&&c.ac_completed)?'yes':'no'; $('cAcDate').value=c?c.ac_date||'':'';
+  const manual=can('manualCompliance'); // compliance staff complete KYC/A&C only through an approved questionnaire
+  ['cKyc','cKycDate','cAc','cAcDate'].forEach(id=>$(id).disabled=!manual);
+  $('cKycRow').title=$('cAcRow').title=manual?'':t('via_questionnaire');
   $('cNotes').value=c?c.notes||'':''; $('ovClient').dataset.id=id||'';
   updateFRA();
   $('ovClient').classList.add('show');
@@ -838,6 +1182,8 @@ async function saveClient(){
     client_types:ctypes.length?ctypes:null,
     legal_structure:$('cLegal').value||null,contract_currency:$('cCurrency').value,
     kyc_completed:$('cKyc').value==='yes', kyc_last_review:$('cKycDate').value||null,
+    ac_completed:$('cAc').value==='yes', ac_date:$('cAcDate').value||null,
+    group_id:$('cGroup').value||null,
     notes:$('cNotes').value.trim()||null};
   if(!payload.name){alert(t('a_client_required'));return}
   let err;
@@ -851,9 +1197,9 @@ function openEngModal(clientId,engId){
   $('engModalTitle').textContent=engId?t('m_edit_eng'):t('m_add_eng');
   $('eClientId').value=clientId; $('ovEng').dataset.id=engId||'';
   const seedYear=e?e.year:((clientYearFilter&&clientYearFilter!=='all')?+clientYearFilter:null);
-  $('eService').value=e?e.service_line||'':''; fillYears($('eYear'), seedYear);
+  fillServices($('eService'), e?e.service_line:''); fillYears($('eYear'), seedYear);
   $('eRevenue').value=e?(e.revenue==null?'':e.revenue):''; $('eStatus').value=e?e.status||'Open':'Open';
-  $('eFreq').value=e?e.billing_frequency||'':'';
+  $('eFreq').value=e?e.billing_frequency||'':''; $('eDue').value=e?e.due_date||'':''; updateDueVisibility();
   fillStaff($('ePartner'), e?e.engagement_partner:null); fillStaff($('eManager'), e?e.engagement_manager:null);
   $('eLetter').value=(e&&e.letter_signed)?'yes':'no'; $('eLetterDate').value=e?e.letter_signed_date||'':'';
   $('eDesc').value=e?e.description||'':'';
@@ -876,6 +1222,7 @@ async function saveEngagement(){
   const payload={client_id:clientId,service_line:$('eService').value.trim(),year:parseInt($('eYear').value)||null,
     status:$('eStatus').value,billing_frequency:$('eFreq').value||null,
     engagement_partner:$('ePartner').value||null,engagement_manager:$('eManager').value||null,
+    due_date:isDeadlineService($('eService').value)?($('eDue').value||null):null, // deadlines only for audit-type work
     letter_signed:$('eLetter').value==='yes',letter_signed_date:$('eLetterDate').value||null,
     description:$('eDesc').value.trim()||null};
   if(can('seeFinancials')) payload.revenue=parseFloat($('eRevenue').value)||0;
@@ -939,6 +1286,395 @@ async function saveRates(){
   closeModal('ovRates'); await refresh();
 }
 
+/* ---- compliance portal: questionnaires ---- */
+// Form definitions drive the questionnaire. PLACEHOLDERS until Moore Egypt's own KYC and A&C forms are loaded.
+// Field types: text, textarea, date, number, select, yesno (details:true adds an explanation box), table (repeating rows).
+// "client" maps an answer onto the client record when the questionnaire is approved.
+const YN_DETAILS={type:'yesno',details:true};
+const FORM_DEFS={
+  kyc:{version:'placeholder-1',title:'KYC / AML questionnaire',sections:[
+    {title:'General information',fields:[
+      {key:'legal_name',label:'Name of legal entity',type:'text',required:true,client:'name'},
+      {key:'trade_name',label:'Trade / brand name',type:'text'},
+      {key:'legal_form',label:'Legal form',type:'select',options:['SAE','LLC','Partnership','Branch','Rep Office'],client:'legal_structure'},
+      {key:'industry',label:'Industry / sector',type:'select',options:INDUSTRIES,client:'industry'},
+      {key:'jurisdiction',label:'Jurisdiction of incorporation',type:'text',required:true},
+      {key:'incorporation_date',label:'Date of incorporation',type:'date'},
+      {key:'registration_no',label:'Commercial registration number',type:'text',required:true},
+      {key:'tax_id',label:'Tax ID number',type:'text',required:true},
+      {key:'registered_address',label:'Registered office address',type:'textarea',required:true},
+      {key:'business_address',label:'Business address (if different)',type:'textarea'}]},
+    {title:'Contact person',fields:[
+      {key:'contact_name',label:'Full name',type:'text',required:true},
+      {key:'contact_capacity',label:'Capacity / position',type:'text'},
+      {key:'contact_email',label:'Email address',type:'text'},
+      {key:'contact_phone',label:'Contact number',type:'text'}]},
+    {title:'Financial profile',fields:[
+      {key:'activities',label:'Detailed description of activities',type:'textarea',required:true},
+      {key:'countries',label:'Countries of business activity',type:'text'},
+      {key:'affiliates',label:'Affiliated entities (direct or indirect control)',type:'textarea'},
+      {key:'source_of_capital',label:'Source(s) of capital invested',type:'textarea',required:true},
+      {key:'bank_country',label:'Country of bank account the client will pay from',type:'text'},
+      {key:'turnover',label:'Latest (or expected) annual turnover',type:'text'}]},
+    {title:'Directors & signatories',fields:[
+      {key:'directors',label:'Board of directors',type:'table',required:true,columns:[
+        {key:'name',label:'Full name'},{key:'id_no',label:'Passport / ID no.'},{key:'nationality',label:'Nationality'},
+        {key:'capacity',label:'Capacity',type:'select',options:['Executive','Non-executive','Secretary']}]},
+      {key:'signatories',label:'Authorised signatories',type:'textarea'}]},
+    {title:'Shareholders & beneficial owners',fields:[
+      {key:'shareholders',label:'Shareholders',type:'table',required:true,columns:[
+        {key:'name',label:'Name'},{key:'type',label:'Type',type:'select',options:['Individual','Legal entity']},
+        {key:'country',label:'Nationality / jurisdiction'},{key:'pct',label:'% held'}]},
+      {key:'ubos',label:'Ultimate beneficial owners',type:'table',required:true,columns:[
+        {key:'name',label:'Full name'},{key:'nationality',label:'Nationality'},{key:'id_no',label:'Passport / ID no.'},
+        {key:'basis',label:'Ownership % / control basis'}]}]},
+    {title:'Screening & risk assessment',fields:[
+      {key:'pep',label:'Any politically exposed persons (PEPs) involved?',...YN_DETAILS,required:true},
+      {key:'sanctions',label:'Any sanctions matches?',...YN_DETAILS,required:true},
+      {key:'adverse_media',label:'Any adverse media?',...YN_DETAILS,required:true},
+      {key:'screening_tool',label:'Screening tool / reference',type:'text'},
+      {key:'screening_date',label:'Screening date',type:'date'},
+      {key:'risk_rating',label:'Client risk rating',type:'select',options:['Low','Medium','High'],required:true},
+      {key:'edd',label:'Enhanced due diligence required?',...YN_DETAILS},
+      {key:'risk_rationale',label:'Rationale for the risk rating',type:'textarea',required:true}]}]},
+  ac:{version:'placeholder-1',title:'Acceptance & Continuance questionnaire',sections:[
+    {title:'Engagement',fields:[
+      {key:'acceptance_type',label:'New client (acceptance) or existing (continuance)?',type:'select',options:['Acceptance — new client','Continuance — existing client'],required:true},
+      {key:'services',label:'Services to be provided',type:'textarea',required:true},
+      {key:'period',label:'Financial year / period covered',type:'text'}]},
+    {title:'Independence & ethics',fields:[
+      {key:'independence_threats',label:'Any threats to independence identified?',...YN_DETAILS,required:true},
+      {key:'fee_dependency',label:'Would fees from this client exceed the fee-dependency threshold?',...YN_DETAILS,required:true},
+      {key:'non_audit',label:'Any non-audit services that could create a conflict?',...YN_DETAILS},
+      {key:'conflicts',label:'Any conflicts of interest?',...YN_DETAILS,required:true}]},
+    {title:'Integrity of the client',fields:[
+      {key:'integrity_concerns',label:'Any concerns about the integrity of owners or management?',...YN_DETAILS,required:true},
+      {key:'litigation',label:'Any significant litigation or regulatory investigations?',...YN_DETAILS},
+      {key:'going_concern',label:'Any going-concern doubts?',...YN_DETAILS}]},
+    {title:'Competence & resources',fields:[
+      {key:'competence',label:'Does the firm have the competence and capabilities required?',...YN_DETAILS,required:true},
+      {key:'resources',label:'Are sufficient resources available to meet the deadlines?',...YN_DETAILS,required:true}]},
+    {title:'Previous auditor (new clients)',fields:[
+      {key:'prior_auditor',label:'Previous auditor',type:'text'},
+      {key:'prior_comm',label:'Communication with the previous auditor completed?',...YN_DETAILS}]},
+    {title:'Conclusion',fields:[
+      {key:'engagement_risk',label:'Engagement risk',type:'select',options:['Low','Medium','High'],required:true},
+      {key:'conclusion',label:'Conclusion',type:'select',options:['Accept','Continue','Decline'],required:true},
+      {key:'conclusion_notes',label:'Basis for conclusion',type:'textarea',required:true}]}]},
+};
+const DOC_TYPES=['Commercial register extract','Tax card','Articles / memorandum of association','Passport / national ID','Proof of address',
+  'Shareholder register / ownership chart','UBO declaration','Board resolution / authorised signatories','Screening report','Financial statements','Other'];
+const RV_BADGE={draft:'grey',submitted:'yellow',returned:'red',approved:'green'};
+function rvBadge(s){return `<span class="badge ${RV_BADGE[s]||'grey'}">${t('rv_'+s)}</span>`}
+function kindLabel(k){return k==='kyc'?'KYC / AML':t('al_ac')}
+function reviewById(id){return (data.reviews||[]).find(r=>r.id===id)}
+function openReviewFor(clientId,kind){const c=clientById(clientId);
+  return (data.reviews||[]).find(r=>r.kind===kind&&r.status!=='approved'&&(r.client_id===clientId||(r.group_id&&c&&r.group_id===c.group_id)));}
+function reviewEditable(r){return can('doCompliance')&&(r.status==='draft'||r.status==='returned')}
+function reviewMine(r){return state.user&&(r.prepared_by===state.user.id||r.submitted_by===state.user.id)}
+function reviewClientCell(r){const c=clientById(r.client_id)||{},g=r.group_id?groupById(r.group_id):null;
+  return `<span class="linkname" onclick="openClient('${r.client_id}')">${esc(c.name||'—')}</span>${g?groupChip(g):''}`;}
+function reviewTable(list,empty){
+  if(!list.length)return `<div class="empty">${empty||t('al_none')}</div>`;
+  return `<table><thead><tr><th>${t('th_client')}</th><th>${t('q_type')}</th><th>${t('q_scope')}</th><th>${t('th_status')}</th><th>${t('q_prepared_by')}</th><th>${t('q_updated')}</th><th></th></tr></thead><tbody>${
+    list.map(r=>{const g=r.group_id?groupById(r.group_id):null;return `<tr><td>${reviewClientCell(r)}</td><td>${kindLabel(r.kind)}</td>
+      <td>${g?t('whole_group',{n:groupMembers(g.id).length}):t('this_entity')}</td><td>${rvBadge(r.status)}</td>
+      <td>${esc(staffName(r.prepared_by)||'—')}</td><td>${fmtDate((r.updated_at||'').slice(0,10))}</td>
+      <td class="rowact"><button onclick="openReview('${r.id}')">${t('open_btn')}</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+function renderCompliance(){
+  const el=$('complianceTable'); if(!el)return;
+  const q=searchTerm(), R=(data.reviews||[]).filter(r=>{if(!q)return true;const c=clientById(r.client_id)||{},g=groupById(r.group_id);
+    return (c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q)||(g&&(g.name||'').toLowerCase().includes(q));});
+  const sub=R.filter(r=>r.status==='submitted'), ret=R.filter(r=>r.status==='returned'), dr=R.filter(r=>r.status==='draft');
+  const since=addDays(todayISO(),-30);
+  const appr=R.filter(r=>r.status==='approved').sort((a,b)=>String(b.reviewed_at).localeCompare(String(a.reviewed_at)));
+  const recent=appr.filter(r=>(r.reviewed_at||'').slice(0,10)>=since);
+  const officer=can('approveCompliance');
+  const mineToApprove=officer?sub.filter(r=>!reviewMine(r)).length:0;
+  const badge=$('compBadge'); if(badge){const n=officer?mineToApprove:(can('doCompliance')?ret.length:0); badge.textContent=n; badge.classList.toggle('hidden',!n);}
+  // To do: clients with KYC/A&C issues and no questionnaire under way (group rows roll up, as in Alerts)
+  const A=computeAlerts(), open=r=>r.status!=='approved';
+  const todo=[...A.kyc.map(x=>({...x,kind:'kyc'})),...A.ac.map(x=>({...x,kind:'ac'}))].filter(x=>x.group
+      ?!(data.reviews||[]).some(r=>open(r)&&r.kind===x.kind&&r.group_id===x.group.id)
+      :!openReviewFor(x.c.id,x.kind));
+  const dot=l=>`<span class="statusdot" style="background:${l==='red'?'#d64352':'#e0a81e'};margin-inline-end:6px;vertical-align:-1px"></span>`;
+  const todoRows=todo.slice(0,100).map(x=>{const g=x.group, first=g?groupMembers(g.id).sort((a,b)=>a.client_code-b.client_code)[0]:null;
+    const who=g?`<span class="linkname" onclick="openGroup('${g.id}')">${esc(g.name)}</span> ${groupChip(g)} <span class="hint">${t('n_of_entities',{n:x.n,total:x.total})}</span>`
+      :`<span class="linkname" onclick="openClient('${x.c.id}')">${esc(x.c.name)}</span> <span class="code">#${x.c.client_code}</span>`;
+    const btn=can('doCompliance')&&(g?first:x.c)?`<button class="primary" onclick="startReview('${g?first.id:x.c.id}','${x.kind}',${g?`'${g.id}'`:'null'})">${t('start_btn')}</button>`:'';
+    return `<tr><td>${dot(x.level)}${who}</td><td>${kindLabel(x.kind)}</td><td>${esc(x.text)}</td><td>${fmtDate(x.due)}</td><td class="rowact">${btn}</td></tr>`;}).join('');
+  const card=(lbl,n,sub)=>`<div class="card"><div class="lbl">${lbl}</div><div class="val">${n}</div><div class="sub">${sub||''}</div></div>`;
+  const panel=(title,body,extra)=>`<div class="panel" style="margin-bottom:16px"><h3>${title}${extra||''}</h3>${body}</div>`;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="hint">${t('portal_intro')}<br>${(()=>{const s=(data.people||[]).filter(p=>p.kyc_approve).map(p=>esc(p.full_name||p.email));
+        return s.length?t('signoff_people',{names:s.join(', ')}):`<span style="color:#b23b3b">${t('no_signoff')}</span>`;})()}</div>
+      ${can('doCompliance')?`<button class="primary" onclick="openStartReview()">${t('start_q_btn')}</button>`:''}</div>
+    <div class="stats" style="margin-top:0">
+      ${card(t('rv_submitted'),sub.length,officer?t('n_for_you',{n:mineToApprove}):'')}${card(t('rv_returned'),ret.length)}${card(t('rv_draft'),dr.length)}${card(t('approved_30'),recent.length)}</div>
+    ${panel(t('rv_submitted'),reviewTable(sub))}
+    ${panel(t('rv_returned'),reviewTable(ret))}
+    ${panel(t('q_in_progress'),reviewTable(dr))}
+    ${panel(t('q_todo'),todo.length?`<table><thead><tr><th>${t('th_client')}</th><th>${t('q_type')}</th><th>${t('th_issue')}</th><th>${t('th_next_due')}</th><th></th></tr></thead><tbody>${todoRows}</tbody></table>${todo.length>100?`<div class="hint" style="padding:8px 16px">${t('showing_first',{n:100,total:todo.length})}</div>`:''}`:`<div class="empty">${t('al_none')}</div>`,` <span class="hint">(${todo.length})</span>`)}
+    ${panel(t('q_recent'),reviewTable(appr.slice(0,20)))}`;
+}
+// start
+function openStartReview(){ $('srSearch').value=''; fillStartClients(); $('srKind').value='kyc'; updateStartGroup(); $('ovStartReview').classList.add('show'); }
+function fillStartClients(){
+  const q=$('srSearch').value.trim().toLowerCase(), sel=$('srClient'), cur=sel.value;
+  const list=data.clients.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q)).sort((a,b)=>(a.name||'').localeCompare(b.name||'')).slice(0,300);
+  sel.innerHTML=list.map(c=>{const g=groupOf(c);return `<option value="${c.id}"${c.id===cur?' selected':''}>${c.client_code} — ${esc(c.name)}${g?' ['+esc(g.group_code)+']':''}</option>`;}).join('');
+  if(!sel.value&&list.length)sel.value=list[0].id; updateStartGroup();
+}
+function updateStartGroup(){const c=clientById($('srClient').value), g=groupOf(c);
+  $('srGroupWrap').classList.toggle('hidden',!g);
+  if(g)$('srGroupLbl').textContent=t('apply_to_group',{g:g.group_code+' — '+g.name,n:groupMembers(g.id).length});}
+function startReviewFromModal(){const c=clientById($('srClient').value); if(!c){alert(t('pick_client'));return}
+  const g=groupOf(c); startReview(c.id,$('srKind').value,(g&&$('srGroup').checked)?g.id:null);}
+async function startReview(clientId,kind,groupId){
+  const existing=openReviewFor(clientId,kind); if(existing){closeModal('ovStartReview');openReview(existing.id);return;}
+  const c=clientById(clientId)||{}, def=FORM_DEFS[kind], answers={};
+  def.sections.forEach(s=>s.fields.forEach(f=>{if(f.client&&c[f.client])answers[f.key]=c[f.client];})); // prefill from the client record
+  const {data:ins,error}=await sb.from('compliance_reviews').insert({client_id:clientId,group_id:groupId||null,kind,form_version:def.version,answers}).select('id').single();
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  closeModal('ovStartReview'); await refresh(); openReview(ins.id);
+}
+// questionnaire page
+function openReview(id){viewReviewId=id;viewClientId=null;viewGroupId=null;reviewWorking=null;
+  document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show'));
+  $('mainView').classList.add('hidden');$('clientView').classList.remove('hidden');renderReview();window.scrollTo(0,0);}
+function fmtAnswer(f,v){if(v==null||v==='')return '—';if(f.type==='date')return fmtDate(v);if(f.type==='yesno')return v==='Yes'?t('yes'):v==='No'?t('no'):esc(v);return esc(v).replace(/\n/g,'<br>');}
+function qInput(key,f,v,ed){
+  v=v==null?'':v;
+  if(!ed)return `<div class="qval">${fmtAnswer(f,v)}</div>`;
+  if(f.type==='textarea')return `<textarea data-q="${key}" rows="3">${esc(v)}</textarea>`;
+  if(f.type==='date'||f.type==='number')return `<input type="${f.type}" data-q="${key}" value="${esc(v)}">`;
+  if(f.type==='select')return `<select data-q="${key}"><option value="">${t('opt_select')}</option>${f.options.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  if(f.type==='yesno')return `<span class="yn"><label><input type="radio" name="yn_${key}" data-q="${key}" value="Yes"${v==='Yes'?' checked':''}> ${t('yes')}</label> <label><input type="radio" name="yn_${key}" data-q="${key}" value="No"${v==='No'?' checked':''}> ${t('no')}</label></span>`;
+  return `<input data-q="${key}" value="${esc(v)}">`;
+}
+function qTable(f,rows,ed){
+  rows=Array.isArray(rows)?rows:[]; if(ed&&!rows.length)rows=[{}];
+  if(!rows.length)return '<div class="qval">—</div>';
+  const cell=(c,v)=>{v=v==null?'':v; if(!ed)return esc(v)||'—';
+    return c.type==='select'?`<select data-qc="${c.key}"><option value=""></option>${c.options.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`:`<input data-qc="${c.key}" value="${esc(v)}">`;};
+  return `<div class="qtable" data-qt="${f.key}"><table><thead><tr>${f.columns.map(c=>`<th>${esc(c.label)}</th>`).join('')}${ed?'<th></th>':''}</tr></thead><tbody>${
+    rows.map((r,i)=>`<tr>${f.columns.map(c=>`<td>${cell(c,r[c.key])}</td>`).join('')}${ed?`<td><button class="del" onclick="qRemoveRow('${f.key}',${i})">✕</button></td>`:''}</tr>`).join('')}</tbody></table>
+    ${ed?`<button onclick="qAddRow('${f.key}')" style="margin-top:6px">${t('add_row')}</button>`:''}</div>`;
+}
+function collectAnswers(keepEmptyRows){
+  const a={}, root=$('reviewForm'); if(!root)return a;
+  root.querySelectorAll('[data-q]').forEach(el=>{const k=el.dataset.q;
+    if(el.type==='radio'){if(!(k in a))a[k]='';if(el.checked)a[k]=el.value;} else a[k]=el.value;});
+  root.querySelectorAll('[data-qt]').forEach(tb=>{
+    const rows=[...tb.querySelectorAll('tbody tr')].map(tr=>{const r={};tr.querySelectorAll('[data-qc]').forEach(el=>r[el.dataset.qc]=el.value);return r;});
+    a[tb.dataset.qt]=keepEmptyRows?rows:rows.filter(r=>Object.values(r).some(v=>String(v).trim()));});
+  return a;
+}
+function stashAnswers(){if(viewReviewId&&$('reviewForm')&&$('reviewForm').dataset.editable==='1')reviewWorking={id:viewReviewId,answers:collectAnswers(true)};}
+function qAddRow(key){stashAnswers();const a=reviewWorking.answers;(a[key]=a[key]||[]).push({});renderReview();}
+function qRemoveRow(key,i){stashAnswers();const a=reviewWorking.answers;(a[key]||[]).splice(i,1);renderReview();}
+function missingRequired(kind,a){const miss=[];
+  FORM_DEFS[kind].sections.forEach(s=>s.fields.forEach(f=>{if(!f.required)return;const v=a[f.key];
+    if(f.type==='table'?!(Array.isArray(v)&&v.some(r=>Object.values(r).some(x=>String(x).trim()))):!String(v==null?'':v).trim())miss.push(f.label);}));
+  return miss;}
+function renderReview(){
+  const r=reviewById(viewReviewId); if(!r){closeClient();return}
+  const c=clientById(r.client_id)||{}, g=r.group_id?groupById(r.group_id):null, def=FORM_DEFS[r.kind];
+  const ed=reviewEditable(r);
+  const a=(reviewWorking&&reviewWorking.id===r.id)?reviewWorking.answers:(r.answers||{});
+  const docs=(data.docs||[]).filter(d=>d.review_id===r.id);
+  const canApprove=can('approveCompliance')&&r.status==='submitted'&&!reviewMine(r);
+  const who=(lbl,id,ts)=>id?`<div>${lbl}: <b>${esc(staffName(id)||'—')}</b>${ts?' · '+fmtDate(String(ts).slice(0,10)):''}</div>`:'';
+  const sections=def.sections.map(s=>`<div class="panel" style="margin-bottom:14px"><h3>${esc(s.title)}</h3><div class="qgrid">${
+    s.fields.map(f=>{const lab=`<label>${esc(f.label)}${f.required?' <span style="color:#d64352">*</span>':''}</label>`;
+      if(f.type==='table')return `${lab}<div>${qTable(f,a[f.key],ed)}</div>`;
+      const extra=f.details?`<div style="margin-top:6px">${ed?`<textarea data-q="${f.key}_details" rows="2" placeholder="${esc(t('details_ph'))}">${esc(a[f.key+'_details']||'')}</textarea>`:(a[f.key+'_details']?`<div class="qval hint">${esc(a[f.key+'_details'])}</div>`:'')}</div>`:'';
+      return `${lab}<div>${qInput(f.key,f,a[f.key],ed)}${extra}</div>`;}).join('')}</div></div>`).join('');
+  const docRows=docs.length?`<table><thead><tr><th>${t('doc_type')}</th><th>${t('th_file')}</th><th>${t('q_uploaded_by')}</th><th></th></tr></thead><tbody>${
+    docs.map(d=>`<tr><td>${esc(d.doc_type||'—')}</td><td>📎 <a href="#" onclick="openKycDoc('${esc(d.file_path)}');return false">${esc(d.file_name||t('view_file'))}</a></td>
+      <td>${esc(staffName(d.uploaded_by)||'—')} · ${fmtDate(String(d.uploaded_at).slice(0,10))}</td>
+      <td class="rowact">${ed?`<button class="del" onclick="removeKycDoc('${d.id}')">${t('remove_file')}</button>`:''}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">${t('no_docs')}</div>`;
+  const upload=ed?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 16px;border-top:1px solid var(--line)">
+      <select id="docType">${DOC_TYPES.map(x=>`<option>${esc(x)}</option>`).join('')}</select>
+      <input type="file" id="docFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+      <button class="primary" onclick="uploadKycDoc()">${t('upload_btn')}</button></div>`:'';
+  let actions='';
+  if(ed) actions=`<button onclick="saveReview(false)">${t('save_draft')}</button> <button class="primary" onclick="saveReview(true)">${t('submit_approval')}</button>${r.status==='draft'?` <button class="del" onclick="deleteReview()">${t('delete_draft')}</button>`:''}`;
+  else if(canApprove) actions=`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <label class="rlabel" style="display:flex;flex-direction:column;gap:4px">${t('completion_date')}<input type="date" id="rvDate" value="${todayISO()}"></label>
+      <button class="primary" onclick="approveReview()">${t('approve_btn')}</button>
+      <label class="rlabel" style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:220px">${t('return_comment')}<input id="rvComment" placeholder="${esc(t('return_ph'))}"></label>
+      <button onclick="returnReview()">${t('return_btn')}</button></div>`;
+  else if(r.status==='submitted') actions=`<div class="hint">${reviewMine(r)&&can('approveCompliance')?t('cannot_self_approve'):t('awaiting_officer')}</div>`;
+  $('clientView').innerHTML=`
+   <button class="backbtn" onclick="closeClient();setTab('compliance')">${t('back')}</button>
+   <div class="panel" style="margin-bottom:14px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+     <div><h2 style="margin:0;font-size:20px">${esc(def.title)} ${rvBadge(r.status)}</h2>
+       <div class="sub2" style="margin-top:4px"><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name||'—')}</span> <span class="code">#${c.client_code||''}</span>
+         ${g?` · ${groupChip(g)} ${t('applies_group',{n:groupMembers(g.id).length})}`:''}</div>
+       ${String(r.form_version||'').startsWith('placeholder')?`<div class="hint" style="margin-top:6px;color:#8a5a00">${t('placeholder_note')}</div>`:''}</div>
+     <div class="hint" style="text-align:end">${who(t('q_prepared_by'),r.prepared_by,r.created_at)}${who(t('q_submitted_by'),r.submitted_by,r.submitted_at)}${who(r.status==='returned'?t('q_returned_by'):t('q_approved_by'),r.reviewed_by,r.reviewed_at)}${r.completion_date?`<div>${t('completion_date')}: <b>${fmtDate(r.completion_date)}</b></div>`:''}</div>
+   </div>
+   ${r.status==='returned'&&r.review_comment?`<div style="margin:0 20px 16px;padding:10px 14px;border-radius:10px;background:#fde9e9;color:#b23b3b"><b>${t('returned_note')}</b> ${esc(r.review_comment)}</div>`:''}</div>
+   <div id="reviewForm" data-editable="${ed?1:0}">${sections}</div>
+   <div class="panel" style="margin-bottom:14px"><h3>${t('supporting_docs')} <span class="hint">(${docs.length})</span></h3>${docRows}${upload}</div>
+   ${actions?`<div class="panel" style="margin-bottom:24px"><div style="padding:14px 18px">${actions}<div class="hint" id="rvMsg" style="margin-top:6px"></div></div></div>`:''}`;
+}
+async function saveReview(submit){
+  const r=reviewById(viewReviewId), a=collectAnswers(false);
+  if(submit){const miss=missingRequired(r.kind,a); if(miss.length){alert(t('a_missing_required')+'\n• '+miss.join('\n• '));return}
+    if(!confirm(t('a_confirm_submit')))return;}
+  const patch={answers:a}; if(submit)patch.status='submitted';
+  const {error}=await sb.from('compliance_reviews').update(patch).eq('id',r.id);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  reviewWorking=null; await refresh(); if($('rvMsg'))$('rvMsg').textContent=submit?t('submitted_ok'):t('saved_ok');
+}
+async function deleteReview(){
+  const r=reviewById(viewReviewId); if(!r||!confirm(t('a_delete_draft')))return;
+  const paths=(data.docs||[]).filter(d=>d.review_id===r.id).map(d=>d.file_path);
+  if(paths.length){try{await sb.storage.from('kyc-documents').remove(paths);}catch(_){}}
+  const {error}=await sb.from('compliance_reviews').delete().eq('id',r.id);
+  if(error){alert(error.message);return}
+  closeClient(); setTab('compliance'); await refresh();
+}
+async function approveReview(){
+  const r=reviewById(viewReviewId), d=$('rvDate').value||todayISO();
+  const g=r.group_id?groupById(r.group_id):null;
+  if(!confirm(t('a_confirm_approve',{what:kindLabel(r.kind),d:fmtDate(d),n:g?groupMembers(g.id).length:1})))return;
+  const {error}=await sb.from('compliance_reviews').update({status:'approved',completion_date:d}).eq('id',r.id);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  // copy mapped answers (name, legal form, industry) onto the client record
+  const patch={}; FORM_DEFS[r.kind].sections.forEach(s=>s.fields.forEach(f=>{const v=(r.answers||{})[f.key]; if(f.client&&v)patch[f.client]=v;}));
+  if(Object.keys(patch).length){const {error:e2}=await sb.from('clients').update(patch).eq('id',r.client_id); if(e2)alert(t('a_client_not_updated')+e2.message);}
+  await refresh(); if($('rvMsg'))$('rvMsg').textContent=t('approved_ok');
+}
+async function returnReview(){
+  const cm=$('rvComment').value.trim(); if(!cm){alert(t('a_comment_required'));return}
+  const {error}=await sb.from('compliance_reviews').update({status:'returned',review_comment:cm}).eq('id',viewReviewId);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  await refresh();
+}
+async function uploadKycDoc(){
+  const r=reviewById(viewReviewId), file=$('docFile').files&&$('docFile').files[0];
+  if(!file){alert(t('pick_file'));return}
+  stashAnswers();
+  const safe=(file.name||'file').replace(/[^\w.\-]+/g,'_'), path=`${r.client_id}/${r.id}/${Date.now()}_${safe}`;
+  const up=await sb.storage.from('kyc-documents').upload(path,file,{contentType:file.type||undefined});
+  if(up.error){alert(t('a_could_not_save')+up.error.message);return}
+  const {error}=await sb.from('compliance_documents').insert({review_id:r.id,client_id:r.client_id,doc_type:$('docType').value,file_path:path,file_name:file.name||safe});
+  if(error){try{await sb.storage.from('kyc-documents').remove([path]);}catch(_){} alert(t('a_could_not_save')+error.message);return}
+  await refresh();
+}
+async function openKycDoc(path){const {data:u,error}=await sb.storage.from('kyc-documents').createSignedUrl(path,120);
+  if(error){alert(error.message);return} window.open(u.signedUrl,'_blank');}
+async function removeKycDoc(id){
+  const d=(data.docs||[]).find(x=>x.id===id); if(!d||!confirm(t('a_remove_file')))return;
+  stashAnswers();
+  const {error}=await sb.from('compliance_documents').delete().eq('id',id); if(error){alert(error.message);return}
+  try{await sb.storage.from('kyc-documents').remove([d.file_path]);}catch(_){}
+  await refresh();
+}
+
+/* ---- client groups ---- */
+function openGroup(id){viewGroupId=id;viewClientId=null;viewReviewId=null;document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show'));
+  $('mainView').classList.add('hidden');$('clientView').classList.remove('hidden');renderGroup();window.scrollTo(0,0);}
+function renderGroup(){
+  const g=groupById(viewGroupId); if(!g){closeClient();return}
+  const fin=can('seeFinancials'), edit=can('editClients');
+  const members=groupMembers(g.id);
+  const rows=members.map(clientRankRow).sort((a,b)=>fin?b.total-a.total:a.c.client_code-b.c.client_code);
+  const total=rows.reduce((s,r)=>s+r.total,0), engCount=rows.reduce((s,r)=>s+r.count,0);
+  const okCount=kind=>members.filter(c=>!complianceIssues(c).some(i=>i.kind===kind&&i.level==='red')).length;
+  const tickRow=(kind,label)=>`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)">
+      <div style="min-width:200px"><div style="font-weight:700">${label}</div><div class="hint">${t('n_up_to_date',{ok:okCount(kind),n:members.length})}</div></div>
+      ${edit&&can('manualCompliance')&&members.length?`<label class="rlabel" style="display:flex;align-items:center;gap:6px">${t('completed_on')} <input type="date" id="g_${kind}_date" value="${todayISO()}"></label>
+      <button class="primary" onclick="groupTick('${kind}')">${t('mark_all_done',{n:members.length})}</button>`:''}
+    </div>`;
+  const cell=(c,kind)=>{const i=complianceIssues(c).find(x=>x.kind===kind); const d=kind==='kyc'?c.kyc_last_review:c.ac_date;
+    const col=!i?'#1f7a4d':i.level==='red'?'#b23b3b':'#8a5a00';
+    return `<span style="color:${col};font-weight:600">${i?esc(i.text):'✓ '+fmtDate(d)}</span>`;};
+  $('clientView').innerHTML=`
+   <button class="backbtn" onclick="closeClient()">${t('back')}</button>
+   <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+     <div><h2 style="margin:0;font-size:20px"><span class="code">${esc(g.group_code)}</span> ${esc(g.name)}</h2>
+       <div class="sub2">${t('group_word')} · ${t('n_entities',{n:members.length})}</div>
+       ${g.notes?`<div class="sub2" style="margin-top:6px">${esc(g.notes)}</div>`:''}</div>
+     ${edit?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="openGroupModal('${g.id}')">${t('edit_group')}</button>
+       <button class="primary" onclick="openMembers()">${t('manage_members')}</button>
+       <button class="del" onclick="deleteGroup('${g.id}')">${t('del')}</button></div>`:''}
+   </div></div>
+   ${fin?`<div class="stats" style="margin-top:0">
+     <div class="card"><div class="lbl">${t('group_revenue')}</div><div class="val">${money(total)}</div><div class="sub">${t('all_eng_egp')}</div></div>
+     <div class="card"><div class="lbl">${t('clients')}</div><div class="val">${members.length}</div><div class="sub">${t('n_engagements',{n:engCount})}</div></div>
+   </div>`:''}
+   <div class="panel" style="margin-bottom:16px"><h3>${t('group_onboarding')}</h3><div style="padding:6px 20px 14px">
+     ${tickRow('kyc',t('al_kyc'))}${tickRow('ac',t('al_ac'))}
+     <div class="hint" style="margin-top:8px">${t('group_tick_hint')}</div><div class="hint" id="groupMsg" style="color:#1f7a4d;font-weight:700"></div>
+   </div></div>
+   <div class="panel"><h3>${t('group_members')}</h3>${members.length?`<table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th>KYC/AML</th><th>${t('ac_short')}</th>${fin?'<th class="num">'+t('th_total_rev')+'</th>':''}<th class="num">${t('th_engagements')}</th></tr></thead><tbody>${
+     rows.map(r=>`<tr><td>${statusCell(r.c)}</td><td class="code">${r.c.client_code}</td><td><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span></td>
+       <td>${cell(r.c,'kyc')}</td><td>${cell(r.c,'ac')}</td>${fin?`<td class="num money">${money(r.total)}</td>`:''}<td class="num">${r.count}</td></tr>`).join('')}</tbody></table>`
+     :`<div class="empty">${t('group_empty')}</div>`}</div>`;
+}
+async function groupTick(kind){
+  const g=groupById(viewGroupId); const ids=groupMembers(g.id).map(c=>c.id); if(!ids.length)return;
+  const d=$('g_'+kind+'_date').value||todayISO();
+  if(!confirm(t('a_confirm_group_tick',{what:t(kind==='kyc'?'al_kyc':'al_ac'),d:fmtDate(d),n:ids.length})))return;
+  const patch=kind==='kyc'?{kyc_completed:true,kyc_last_review:d}:{ac_completed:true,ac_date:d};
+  const {error}=await sb.from('clients').update(patch).in('id',ids);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  await refresh(); if($('groupMsg'))$('groupMsg').textContent=t('done_n',{n:ids.length});
+}
+function openGroupModal(id){
+  const g=id?groupById(id):null;
+  $('groupModalTitle').textContent=g?t('edit_group'):t('new_group_title');
+  $('gCode').value=g?g.group_code:''; $('gName').value=g?g.name:''; $('gNotes').value=g?g.notes||'':'';
+  $('ovGroup').dataset.id=id||''; $('ovGroup').classList.add('show');
+}
+async function saveGroup(){
+  const id=$('ovGroup').dataset.id, code=$('gCode').value.trim(), name=$('gName').value.trim();
+  if(!code||!name){alert(t('a_group_required'));return}
+  if((data.groups||[]).some(x=>x.id!==id&&(x.group_code||'').toLowerCase()===code.toLowerCase())){alert(t('a_group_dup',{c:code}));return}
+  const payload={group_code:code,name,notes:$('gNotes').value.trim()||null};
+  let newId=id, error;
+  if(id){({error}=await sb.from('client_groups').update(payload).eq('id',id));}
+  else{const r=await sb.from('client_groups').insert(payload).select('id').single(); error=r.error; if(r.data)newId=r.data.id;}
+  if(error){alert(error.code==='23505'?t('a_group_dup',{c:code}):t('a_could_not_save')+error.message);return}
+  closeModal('ovGroup'); await refresh();
+  if(!id){openGroup(newId); openMembers();} // new group: go straight to picking its entities
+}
+async function deleteGroup(id){
+  const g=groupById(id); if(!g||!confirm(t('a_delete_group',{g:g.group_code})))return;
+  const {error}=await sb.from('client_groups').delete().eq('id',id);
+  if(error){alert(error.message);return}
+  closeClient(); await refresh();
+}
+function openMembers(){
+  const g=groupById(viewGroupId); if(!g)return;
+  memberSel=new Set(groupMembers(g.id).map(c=>c.id));
+  $('membersTitle').textContent=t('m_members',{g:g.group_code+' — '+g.name});
+  $('membersSearch').value=''; renderMemberList(); $('ovMembers').classList.add('show');
+}
+function toggleMember(id,on){on?memberSel.add(id):memberSel.delete(id);$('membersCount').textContent=t('n_selected',{n:memberSel.size});}
+function renderMemberList(){
+  const g=groupById(viewGroupId), q=$('membersSearch').value.trim().toLowerCase();
+  const list=data.clients.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q))
+    .sort((a,b)=>(memberSel.has(b.id)-memberSel.has(a.id))||(a.name||'').localeCompare(b.name||''));
+  $('membersList').innerHTML=list.map(c=>{const other=groupOf(c)&&c.group_id!==g.id?groupOf(c):null;
+    return `<label class="memberrow"><input type="checkbox" ${memberSel.has(c.id)?'checked':''} onchange="toggleMember('${c.id}',this.checked)">
+      <span class="code">${c.client_code}</span> <span style="flex:1">${esc(c.name)}</span>${other?`<span class="hint">${t('in_group',{g:other.group_code})}</span>`:''}</label>`;}).join('')||`<div class="hint">${t('no_clients')}</div>`;
+  $('membersCount').textContent=t('n_selected',{n:memberSel.size});
+}
+async function saveMembers(){
+  const g=groupById(viewGroupId); const current=groupMembers(g.id).map(c=>c.id);
+  const toAdd=[...memberSel].filter(id=>!current.includes(id)), toRemove=current.filter(id=>!memberSel.has(id));
+  if(toAdd.length){const {error}=await sb.from('clients').update({group_id:g.id}).in('id',toAdd); if(error){alert(t('a_could_not_save')+error.message);return}}
+  if(toRemove.length){const {error}=await sb.from('clients').update({group_id:null}).in('id',toRemove); if(error){alert(t('a_could_not_save')+error.message);return}}
+  closeModal('ovMembers'); await refresh();
+}
+
 /* ---- assignment ---- */
 function openAssign(clientId){
   const c=clientById(clientId); $('assignTitle').textContent=c?t('m_assign_title',{name:c.name}):t('m_assign_client');
@@ -960,15 +1696,16 @@ async function saveAssign(){
 
 /* ============ MISC ============ */
 function setTab(tb){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tb));
-  ['clients','engagements','list','people','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
-  if(viewClientId)closeClient();}
+  ['clients','engagements','list','partners','managers','compliance','alerts','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
+  if(viewClientId||viewGroupId||viewReviewId)closeClient();}
 function closeModal(id){$(id).classList.remove('show');}
 function goHome(){
   document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show'));
-  setTab(can('seeDashboard')?'clients':'list');
+  setTab(['compliance','compliance_officer'].includes(state.role)&&can('doCompliance')?'compliance':'list');
   window.scrollTo(0,0);
 }
-async function refresh(){await loadAll();renderAll();if(viewClientId)renderClient();}
+async function refresh(){await loadAll();renderAll();rerenderDetail();}
+function rerenderDetail(){if(viewClientId)renderClient();else if(viewGroupId)renderGroup();else if(viewReviewId)renderReview();}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show'));});
 $('aPass').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
