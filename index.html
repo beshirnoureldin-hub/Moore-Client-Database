@@ -146,7 +146,7 @@
 <!-- APP -->
 <div id="appView" class="hidden">
   <header>
-    <div class="brand"><span class="moorelogo"></span><span class="appname" data-i18n="app_title">Client Revenue Tracker</span></div>
+    <div class="brand" onclick="goHome()" style="cursor:pointer" data-i18n-title="go_home" title="Home"><span class="moorelogo"></span><span class="appname" data-i18n="app_title">Client Revenue Tracker</span></div>
     <div class="who"><span id="whoEmail"></span><span class="rolechip" id="whoRole"></span>
       <button class="langbtn" onclick="toggleLang()">العربية</button>
       <button onclick="signOut()" data-i18n="signout">Sign out</button></div>
@@ -164,12 +164,14 @@
       <button class="tab active" data-tab="clients" onclick="setTab('clients')" id="tabClients">Clients ranked</button>
       <button class="tab" data-tab="engagements" onclick="setTab('engagements')" data-i18n="tab_eng">All engagements</button>
       <button class="tab" data-tab="list" onclick="setTab('list')" data-i18n="tab_list">Client list</button>
+      <button class="tab hidden" data-tab="people" onclick="setTab('people')" id="tabPeople" data-i18n="tab_people">By partner &amp; manager</button>
       <button class="tab" data-tab="users" onclick="setTab('users')" id="tabUsers" data-i18n="settings">⚙ Settings</button>
     </div>
     <div id="mainView">
       <div id="tab-clients"><div class="panel"><h3 id="clientsTitle">Clients — ranked by revenue (EGP)</h3><div id="clientsTable"></div></div></div>
       <div id="tab-engagements" class="hidden"><div class="panel"><h3 data-i18n="tab_eng">All engagements</h3><div id="engTable"></div></div></div>
       <div id="tab-list" class="hidden"><div class="panel"><h3 data-i18n="tab_list">Client list</h3><div id="listTable"></div></div></div>
+      <div id="tab-people" class="hidden"><div id="peopleTable"></div></div>
       <div id="tab-users" class="hidden"><div class="panel"><h3 data-i18n="settings_title">Settings — users &amp; access</h3><div id="usersTable"></div></div></div>
     </div>
     <div id="clientView" class="hidden"></div>
@@ -223,6 +225,10 @@
       <div class="field"><label data-i18n="l_status">Status</label><select id="eStatus"><option value="Open" data-i18n="st_open">Open</option><option value="Closed" data-i18n="st_closed">Closed</option></select></div>
       <div class="field"><label data-i18n="l_billing_freq">Billing frequency</label>
         <select id="eFreq"><option value="" data-i18n="opt_select">Select…</option><option value="Monthly" data-i18n="freq_monthly">Monthly</option><option value="Quarterly" data-i18n="freq_quarterly">Quarterly</option><option value="Annual" data-i18n="freq_annual">Annual</option><option value="One-off" data-i18n="freq_oneoff">One-off</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label data-i18n="l_eng_partner">Engagement partner</label><select id="ePartner"></select></div>
+      <div class="field"><label data-i18n="l_eng_manager">Engagement manager</label><select id="eManager"></select></div>
     </div>
     <div class="row2">
       <div class="field"><label data-i18n="l_letter_signed">Engagement letter signed</label>
@@ -292,7 +298,11 @@ const I18N={
   save_eng:"Save engagement", save_rates:"Save rates", save:"Save", add_user:"Add user", remove:"Remove",
   open_revenue:"Open revenue", open_engs_sub:"open engagements", lifetime_revenue:"Lifetime revenue",
   open_word:"Open", n_closed:"{n} closed", open_engagements:"Open engagements", closed_engagements:"Closed engagements",
-  l_view_year:"View year:", all_years:"All years",
+  l_view_year:"View year:", all_years:"All years", go_home:"Home",
+  tab_people:"By partner & manager", by_partner:"Engagements by engagement partner", by_manager:"Engagements by engagement manager",
+  th_person:"Name", th_clients_n:"Clients", not_assigned:"Not assigned", no_eng_period:"No engagements for this period.",
+  l_eng_partner:"Engagement partner", l_eng_manager:"Engagement manager", not_set:"— Not set —", former_user:"(former user)",
+  eng_partner_short:"Partner", eng_manager_short:"Manager",
   contract_at:"Contract: {ccy} @ {rate} EGP", contract_egp:"Contract: EGP",
   st_open:"Open", st_closed:"Closed",
   m_add_client:"Add client", m_edit_client:"Edit client", l_client_name:"Client name *", l_industry:"Industry",
@@ -351,7 +361,11 @@ const I18N={
   save_eng:"حفظ التكليف", save_rates:"حفظ الأسعار", save:"حفظ", add_user:"إضافة مستخدم", remove:"إزالة",
   open_revenue:"إيراد التكليفات المفتوحة", open_engs_sub:"تكليفات مفتوحة", lifetime_revenue:"إجمالي الإيراد",
   open_word:"مفتوح", n_closed:"{n} مغلق", open_engagements:"التكليفات المفتوحة", closed_engagements:"التكليفات المغلقة",
-  l_view_year:"عرض السنة:", all_years:"كل السنوات",
+  l_view_year:"عرض السنة:", all_years:"كل السنوات", go_home:"الرئيسية",
+  tab_people:"حسب الشريك والمدير", by_partner:"التكليفات حسب شريك التكليف", by_manager:"التكليفات حسب مدير التكليف",
+  th_person:"الاسم", th_clients_n:"العملاء", not_assigned:"غير محدد", no_eng_period:"لا توجد تكليفات لهذه الفترة.",
+  l_eng_partner:"شريك التكليف", l_eng_manager:"مدير التكليف", not_set:"— غير محدد —", former_user:"(مستخدم سابق)",
+  eng_partner_short:"الشريك", eng_manager_short:"المدير",
   contract_at:"التعاقد: {ccy} @ {rate} ج.م", contract_egp:"التعاقد: بالجنيه",
   st_open:"مفتوح", st_closed:"مغلق",
   m_add_client:"إضافة عميل", m_edit_client:"تعديل العميل", l_client_name:"اسم العميل *", l_industry:"المجال",
@@ -393,7 +407,9 @@ function t(k,v){let s=(I18N[state.lang]&&I18N[state.lang][k])!=null?I18N[state.l
 
 /* ============ STATE ============ */
 let state={user:null,role:'none',profile:null,lang:(()=>{try{return localStorage.getItem('crt_lang')||'en'}catch(e){return 'en'}})()};
-let data={clients:[],engagements:[],rates:{},profiles:[],assignments:[],invites:[],policy:{}};
+let data={clients:[],engagements:[],rates:{},profiles:[],assignments:[],invites:[],policy:{},staff:[]};
+let peopleYear=null; // null = current year; 'all' = every year
+const peopleOpen=new Set();
 let authMode='signin';
 let viewClientId=null;
 let clientYearFilter=null; // null = current year default; 'all' = show every year
@@ -439,6 +455,7 @@ function applyLang(){
   document.documentElement.dir=ar?'rtl':'ltr';
   document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.setAttribute('placeholder',t(el.getAttribute('data-i18n-ph')));});
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{el.setAttribute('title',t(el.getAttribute('data-i18n-title')));});
   document.querySelectorAll('.langbtn,.langlink').forEach(b=>b.textContent=ar?'English':'العربية');
   updateAuthTexts();
   if(!$('appView').classList.contains('hidden')){ setupChrome(); renderAll(); if(viewClientId)renderClient(); }
@@ -498,6 +515,7 @@ async function loadAll(){
   if(can('manageUsers')||can('assignClients')){const pr=await sb.from('profiles').select('*'); data.profiles=pr.data||[];}
   if(can('manageUsers')){const iv=await sb.from('invited_roles').select('*'); data.invites=iv.data||[];}
   if(can('assignClients')){const cm=await sb.from('client_managers').select('*'); data.assignments=cm.data||[];}
+  {const sd=await sb.rpc('staff_directory'); data.staff=sd.data||[];}
 }
 
 /* ============ CHROME ============ */
@@ -508,6 +526,7 @@ function setupChrome(){
   $('btnRates').classList.toggle('hidden',!can('manageRates'));
   $('btnUsers').classList.toggle('hidden',!can('manageUsers'));
   $('tabUsers').classList.toggle('hidden',!can('manageUsers'));
+  $('tabPeople').classList.toggle('hidden',!can('seeDashboard'));
   const dash=can('seeDashboard');
   $('stats').classList.toggle('hidden',!dash);
   $('tabClients').classList.toggle('hidden',!dash);
@@ -524,6 +543,47 @@ function engForClient(id){return data.engagements.filter(e=>e.client_id===id)}
 function searchTerm(){return $('search').value.trim().toLowerCase()}
 function filteredClients(){const q=searchTerm();return data.clients.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q));}
 function statusChip(s){s=s||'Open';return `<span class="chip ${s==='Open'?'st-open':'st-closed'}">${t(s==='Closed'?'st_closed':'st_open')}</span>`}
+function staffName(id){if(!id)return '';const s=(data.staff||[]).find(x=>x.id===id)||(data.profiles||[]).find(x=>x.id===id);return s?(s.full_name||s.email):t('former_user');}
+function fillStaff(sel,selected){
+  const cur=selected||'';
+  const list=(data.staff||[]).slice();
+  if(cur&&!list.some(s=>s.id===cur))list.push({id:cur,full_name:staffName(cur),role:null}); // keep a departed person visible
+  sel.innerHTML='<option value="">'+t('not_set')+'</option>'+list.map(s=>`<option value="${esc(s.id)}"${s.id===cur?' selected':''}>${esc(s.full_name||s.email||'—')}${s.role?' ('+esc(t('rs_'+s.role))+')':''}</option>`).join('');
+  sel.value=cur;
+}
+function setPeopleYear(v){peopleYear=v;renderPeople();}
+function togglePerson(k){peopleOpen.has(k)?peopleOpen.delete(k):peopleOpen.add(k);renderPeople();}
+function renderPeople(){
+  const el=$('peopleTable'); if(!el)return;
+  const nowY=new Date().getFullYear();
+  const yset=new Set(data.engagements.map(e=>e.year).filter(Boolean)); yset.add(nowY);
+  const years=[...yset].sort((a,b)=>b-a);
+  const sel=peopleYear==='all'?'all':(peopleYear!=null?+peopleYear:nowY);
+  const q=searchTerm();
+  const engs=data.engagements.filter(e=>sel==='all'||+e.year===+sel).filter(e=>{if(!q)return true;const c=clientById(e.client_id)||{};return (c.name||'').toLowerCase().includes(q)||(e.service_line||'').toLowerCase().includes(q);});
+  const yearSel=`<select onchange="setPeopleYear(this.value)"><option value="all"${sel==='all'?' selected':''}>${t('all_years')}</option>${years.map(y=>`<option value="${y}"${sel!=='all'&&+sel===y?' selected':''}>${y}</option>`).join('')}</select>`;
+  const section=(kind,field,title)=>{
+    const groups={};
+    engs.forEach(e=>{const k=e[field]||'';(groups[k]=groups[k]||[]).push(e);});
+    const rows=Object.entries(groups).map(([id,list])=>({id,list,rev:list.reduce((s,e)=>s+toEGP(e),0),open:list.filter(e=>(e.status||'Open')==='Open').length,clients:new Set(list.map(e=>e.client_id)).size}));
+    rows.sort((a,b)=>((a.id===''?1:0)-(b.id===''?1:0))||(b.rev-a.rev)); // unassigned always last
+    const body=rows.length?rows.map((r,i)=>{const key=kind+':'+r.id; const isOpen=peopleOpen.has(key);
+      const name=r.id?esc(staffName(r.id)):'<em>'+t('not_assigned')+'</em>';
+      return `<tr><td class="rank ${i<3&&r.id?'top':''}">${r.id?i+1:''}</td>
+        <td><span class="linkname" onclick="togglePerson('${key}')">${isOpen?'▾':'▸'} ${name}</span></td>
+        <td class="num">${r.list.length}</td><td class="num">${r.open}</td><td class="num">${r.clients}</td>
+        <td class="num money">${money(r.rev)}</td></tr>`+(isOpen?`<tr><td></td><td colspan="5">${personEngs(r.list)}</td></tr>`:'');}).join('')
+      :`<tr><td colspan="6"><div class="empty">${t('no_eng_period')}</div></td></tr>`;
+    return `<div class="panel" style="margin-bottom:16px"><h3>${title}</h3><table><thead><tr><th class="rank">#</th><th>${t('th_person')}</th><th class="num">${t('th_engagements')}</th><th class="num">${t('open_word')}</th><th class="num">${t('th_clients_n')}</th><th class="num">${t('th_revenue_egp')}</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+  el.innerHTML=`<div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:10px;font-size:12.5px;font-weight:600">${t('l_view_year')} ${yearSel}</div>`
+    +section('p','engagement_partner',t('by_partner'))+section('m','engagement_manager',t('by_manager'));
+}
+function personEngs(list){
+  return `<table><thead><tr><th>${t('th_client')}</th><th>${t('th_service_line')}</th><th class="num">${t('th_year')}</th><th>${t('th_status')}</th><th class="num">${t('th_revenue_egp')}</th></tr></thead><tbody>${
+    list.slice().sort((a,b)=>toEGP(b)-toEGP(a)).map(e=>{const c=clientById(e.client_id)||{};
+      return `<tr><td><span class="linkname" onclick="openClient('${e.client_id}')">${esc(c.name||'—')}</span></td><td><span class="chip">${esc(e.service_line||'—')}</span></td><td class="num">${esc(e.year||'')}</td><td>${statusChip(e.status)}</td><td class="num money">${money(toEGP(e))}</td></tr>`;}).join('')}</tbody></table>`;
+}
 function freqLabel(v){const m={'Monthly':'freq_monthly','Quarterly':'freq_quarterly','Annual':'freq_annual','One-off':'freq_oneoff'};return m[v]?t(m[v]):esc(v||'')}
 const CTYPES=[['Transnational','ct_transnational'],['PIE','ct_pie'],['Listed','ct_listed'],['Family owned','ct_family'],['Private','ct_private'],['Government','ct_government'],['FRA Regulated','ct_fra']];
 const FRA_INDUSTRIES=['Banking','Insurance','Financial services (non-bank)'];
@@ -559,7 +619,7 @@ function statusDot(st){const col={red:'#d64352',yellow:'#e0a81e',green:'#16b685'
 function statusCell(c){const st=clientStatus(c);return `<div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0]||'')}</span></div>`}
 
 /* ============ RENDER ============ */
-function renderAll(){ if(can('seeDashboard')){renderStats();renderClients();} renderEng(); renderList(); if(can('manageUsers'))renderUsers(); }
+function renderAll(){ if(can('seeDashboard')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); if(can('manageUsers'))renderUsers(); }
 
 function renderStats(){
   const el=$('stats'); const clients=data.clients.length;
@@ -688,7 +748,7 @@ function engRows(list,ccy,rate,fin){
   if(!list.length)return '<div class="empty">'+t('no_eng_add')+'</div>';
   const fx=ccy!=='EGP';
   return `<table><thead><tr><th>${t('th_service_line')}</th><th class="num">${t('th_year')}</th>${fin?'<th class="num">'+t('th_revenue_egp')+'</th>':''}<th>${t('th_status')}</th><th>${t('th_desc')}</th><th></th></tr></thead><tbody>${
-    list.map(e=>`<tr><td><span class="chip">${esc(e.service_line||'—')}</span>${(e.billing_frequency||e.letter_file)?`<div class="sub2">${e.billing_frequency?freqLabel(e.billing_frequency):''}${(e.billing_frequency&&e.letter_file)?' · ':''}${e.letter_file?`📎 <a href="#" onclick="openLetter('${esc(e.letter_file)}');return false">${t('view_file')}</a>`:''}</div>`:''}</td>
+    list.map(e=>`<tr><td><span class="chip">${esc(e.service_line||'—')}</span>${(e.billing_frequency||e.letter_file)?`<div class="sub2">${e.billing_frequency?freqLabel(e.billing_frequency):''}${(e.billing_frequency&&e.letter_file)?' · ':''}${e.letter_file?`📎 <a href="#" onclick="openLetter('${esc(e.letter_file)}');return false">${t('view_file')}</a>`:''}</div>`:''}${(e.engagement_partner||e.engagement_manager)?`<div class="sub2">${[e.engagement_partner?t('eng_partner_short')+': '+esc(staffName(e.engagement_partner)):'',e.engagement_manager?t('eng_manager_short')+': '+esc(staffName(e.engagement_manager)):''].filter(Boolean).join(' · ')}</div>`:''}</td>
       <td class="num">${esc(e.year||'')}</td>
       ${fin?`<td class="num money">${money((+e.revenue||0)*rate)}${fx?`<div class="sub2">${moneyCcy(e.revenue,ccy)}</div>`:''}</td>`:''}
       <td>${statusChip(e.status)}</td>
@@ -794,6 +854,7 @@ function openEngModal(clientId,engId){
   $('eService').value=e?e.service_line||'':''; fillYears($('eYear'), seedYear);
   $('eRevenue').value=e?(e.revenue==null?'':e.revenue):''; $('eStatus').value=e?e.status||'Open':'Open';
   $('eFreq').value=e?e.billing_frequency||'':'';
+  fillStaff($('ePartner'), e?e.engagement_partner:null); fillStaff($('eManager'), e?e.engagement_manager:null);
   $('eLetter').value=(e&&e.letter_signed)?'yes':'no'; $('eLetterDate').value=e?e.letter_signed_date||'':'';
   $('eDesc').value=e?e.description||'':'';
   $('eFile').value=''; // clear any previous selection
@@ -814,6 +875,7 @@ async function saveEngagement(){
   const id=$('ovEng').dataset.id, clientId=$('eClientId').value;
   const payload={client_id:clientId,service_line:$('eService').value.trim(),year:parseInt($('eYear').value)||null,
     status:$('eStatus').value,billing_frequency:$('eFreq').value||null,
+    engagement_partner:$('ePartner').value||null,engagement_manager:$('eManager').value||null,
     letter_signed:$('eLetter').value==='yes',letter_signed_date:$('eLetterDate').value||null,
     description:$('eDesc').value.trim()||null};
   if(can('seeFinancials')) payload.revenue=parseFloat($('eRevenue').value)||0;
@@ -898,9 +960,14 @@ async function saveAssign(){
 
 /* ============ MISC ============ */
 function setTab(tb){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tb));
-  ['clients','engagements','list','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
+  ['clients','engagements','list','people','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
   if(viewClientId)closeClient();}
 function closeModal(id){$(id).classList.remove('show');}
+function goHome(){
+  document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show'));
+  setTab(can('seeDashboard')?'clients':'list');
+  window.scrollTo(0,0);
+}
 async function refresh(){await loadAll();renderAll();if(viewClientId)renderClient();}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show'));});
