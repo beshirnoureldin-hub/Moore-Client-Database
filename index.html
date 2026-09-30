@@ -446,6 +446,11 @@ const I18N={
   role_partner:"Partner (full admin)", role_finance:"Finance", role_office_admin:"Office admin (no financials)",
   role_manager:"Audit manager (own portfolio)", role_none:"No access",
   role_compliance:"Compliance staff (KYC, no financials)", role_compliance_officer:"Compliance officer (approves KYC/A&C)",
+  role_partner_ne:"Partner — non-equity (own portfolio)", rs_partner_ne:"Partner (non-equity)",
+  assign_only_admin:"Only equity partners and the admin team can assign engagement partners and managers",
+  delete_user:"Delete", a_delete_user:"Permanently delete {name}?\n\nTheir login is removed and they lose all access. Their name stays on past engagements and questionnaires.\n\nTo confirm, type their email address:\n{email}",
+  a_delete_user_mismatch:"The email didn't match — the user was not deleted.", user_deleted:"{name} has been deleted.",
+  portfolio_ranked_title:"Your portfolio — ranked by revenue (EGP)", your_portfolio:"your portfolio",
   rs_partner:"Partner", rs_finance:"Finance", rs_office_admin:"Office admin", rs_manager:"Audit manager", rs_none:"No access",
   rs_compliance:"Compliance", rs_compliance_officer:"Compliance officer",
   a_email_pass:"Enter your email and password.", a_signin_failed:"Sign-in failed.", a_account_created:"Account created — signing you in…",
@@ -553,6 +558,11 @@ const I18N={
   role_partner:"شريك (صلاحيات كاملة)", role_finance:"المالية", role_office_admin:"إداري (بدون بيانات مالية)",
   role_manager:"مدير تدقيق (محفظته فقط)", role_none:"بدون صلاحية",
   role_compliance:"موظف امتثال (KYC، بدون بيانات مالية)", role_compliance_officer:"مسؤول الامتثال (يعتمد KYC والقبول والاستمرار)",
+  role_partner_ne:"شريك غير مساهم (محفظته فقط)", rs_partner_ne:"شريك (غير مساهم)",
+  assign_only_admin:"يقتصر تعيين شريك ومدير التكليف على الشركاء المساهمين والفريق الإداري",
+  delete_user:"حذف", a_delete_user:"حذف {name} نهائيًا؟\n\nسيتم إلغاء حسابه وفقدان جميع الصلاحيات، مع بقاء اسمه على التكليفات والاستبيانات السابقة.\n\nللتأكيد، اكتب بريده الإلكتروني:\n{email}",
+  a_delete_user_mismatch:"البريد الإلكتروني غير مطابق — لم يتم الحذف.", user_deleted:"تم حذف {name}.",
+  portfolio_ranked_title:"محفظتك — مرتبة حسب الإيراد (ج.م)", your_portfolio:"محفظتك",
   rs_partner:"شريك", rs_finance:"المالية", rs_office_admin:"إداري", rs_manager:"مدير تدقيق", rs_none:"بدون صلاحية",
   rs_compliance:"امتثال", rs_compliance_officer:"مسؤول الامتثال",
   a_email_pass:"أدخل بريدك وكلمة المرور.", a_signin_failed:"فشل تسجيل الدخول.", a_account_created:"تم إنشاء الحساب — جارٍ تسجيل دخولك…",
@@ -579,7 +589,8 @@ const rankOpen=new Set(); let memberSel=new Set();
 let clientYearFilter=null; // null = current year default; 'all' = show every year
 
 const CAP={
-  seeFinancials:['partner','finance','manager'], allClients:['partner','finance','office_admin','compliance','compliance_officer'],
+  seeFinancials:['partner','finance','manager','partner_ne'],
+  seePortfolioDash:['partner','partner_ne'], // summary cards, client ranking, clients by manager (non-equity: own portfolio only) allClients:['partner','finance','office_admin','compliance','compliance_officer'],
   manageRates:['partner','finance'], manageUsers:['partner'], assignClients:['partner','office_admin'],
   editClients:['partner','finance','office_admin','compliance','compliance_officer'], addClients:['partner','finance','office_admin','compliance','compliance_officer'],
   seeDashboard:['partner'],
@@ -710,11 +721,11 @@ function setupChrome(){
   const complianceRole=['compliance','compliance_officer'].includes(state.role);
   if(complianceRole&&can('doCompliance')&&!complianceLanded){complianceLanded=true;setTab('compliance');} // compliance staff land on their portal
   $('tabPartners').classList.toggle('hidden',!can('seeDashboard'));
-  $('tabManagers').classList.toggle('hidden',!can('seeDashboard'));
-  const dash=can('seeDashboard');
+  const dash=can('seePortfolioDash');
+  $('tabManagers').classList.toggle('hidden',!dash);
   $('stats').classList.toggle('hidden',!dash);
   $('tabClients').classList.toggle('hidden',!dash);
-  $('clientsTitle').textContent=t('clients_ranked_title');
+  $('clientsTitle').textContent=t(state.role==='partner_ne'?'portfolio_ranked_title':'clients_ranked_title');
   $('tabClients').textContent=t('tab_clients');
   const active=document.querySelector('.tab.active');
   if(!dash && active && active.dataset.tab==='clients') setTab('list');
@@ -902,7 +913,7 @@ function statusDot(st){const col={red:'#d64352',yellow:'#e0a81e',green:'#16b685'
 function statusCell(c){const st=clientStatus(c);return `<div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0]||'')}</span></div>`}
 
 /* ============ RENDER ============ */
-function renderAll(){ if(can('seeDashboard')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('manageUsers'))renderUsers(); }
+function renderAll(){ if(can('seePortfolioDash')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('manageUsers'))renderUsers(); }
 
 function renderStats(){
   const el=$('stats'); const clients=data.clients.length;
@@ -916,7 +927,7 @@ function renderStats(){
   let topId=null,topV=-1; Object.entries(totals).forEach(([k,v])=>{if(v>topV){topV=v;topId=k;}});
   const top=clientById(topId);
   el.innerHTML=`
-    <div class="card"><div class="lbl">${t('total_signed')}</div><div class="val">${money(total)}</div><div class="sub">${t('all_eng_egp')}</div></div>
+    <div class="card"><div class="lbl">${t('total_signed')}</div><div class="val">${money(total)}</div><div class="sub">${t('all_eng_egp')}${state.role==='partner_ne'?' · <b>'+t('your_portfolio')+'</b>':''}</div></div>
     <div class="card"><div class="lbl">${t('clients')}</div><div class="val">${clients}</div><div class="sub">${t('n_engagements',{n:data.engagements.length})}</div></div>
     <div class="card"><div class="lbl">${t('top_client')}</div><div class="val" style="font-size:17px">${top?esc(top.name):'—'}</div><div class="sub">${top?money(topV):''}</div></div>
     <div class="card"><div class="lbl">${t('avg_client')}</div><div class="val">${clients?money(total/clients):money(0)}</div><div class="sub">${t('mean_revenue')}</div></div>`;
@@ -1083,7 +1094,7 @@ function engRows(list,ccy,rate,fin){
 }
 
 /* ---- settings / users ---- */
-function roleOptions(sel){return ['partner','finance','office_admin','manager','compliance','compliance_officer','none'].map(r=>`<option value="${r}" ${sel===r?'selected':''}>${t('role_'+r)}</option>`).join('');}
+function roleOptions(sel){return ['partner','partner_ne','finance','office_admin','manager','compliance','compliance_officer','none'].map(r=>`<option value="${r}" ${sel===r?'selected':''}>${t('role_'+r)}</option>`).join('');}
 function renderUsers(){
   const el=$('usersTable'); if(!el)return;
   const pending=data.invites||[];
@@ -1105,13 +1116,14 @@ function renderUsers(){
     </div>`:''}
     <div>
       <div style="font-weight:700;padding:14px 18px 6px">${t('active_users',{n:data.profiles.length})}</div>
-      <table><thead><tr><th>${t('th_name_email')}</th><th>${t('th_role')}</th><th>${t('th_active')}</th><th title="${esc(t('kyc_access_tip'))}">${t('th_kyc_access')}</th><th title="${esc(t('kyc_signoff_tip'))}">${t('th_kyc_signoff')}</th></tr></thead><tbody>${
+      <table><thead><tr><th>${t('th_name_email')}</th><th>${t('th_role')}</th><th>${t('th_active')}</th><th title="${esc(t('kyc_access_tip'))}">${t('th_kyc_access')}</th><th title="${esc(t('kyc_signoff_tip'))}">${t('th_kyc_signoff')}</th><th></th></tr></thead><tbody>${
         data.profiles.slice().sort((a,b)=>(a.email||'').localeCompare(b.email||'')).map(p=>`<tr>
           <td><strong>${esc(p.full_name||p.email)}</strong>${p.id===state.user.id?' <span class="chip">'+t('you')+'</span>':''}<div class="sub2">${esc(p.email||'')}</div></td>
           <td><select onchange="setRole('${p.id}',this.value)" ${p.id===state.user.id?'disabled':''}>${roleOptions(p.role)}</select></td>
           <td><input type="checkbox" ${p.active?'checked':''} ${p.id===state.user.id?'disabled':''} onchange="setActive('${p.id}',this.checked)"></td>
           <td><input type="checkbox" ${(p.kyc_prepare||p.kyc_approve)?'checked':''} ${p.kyc_approve?'disabled title="'+esc(t('signoff_implies'))+'"':''} onchange="setKycPerm('${p.id}','kyc_prepare',this.checked)"></td>
-          <td><input type="checkbox" ${p.kyc_approve?'checked':''} onchange="setKycPerm('${p.id}','kyc_approve',this.checked)"></td></tr>`).join('')}</tbody></table>
+          <td><input type="checkbox" ${p.kyc_approve?'checked':''} onchange="setKycPerm('${p.id}','kyc_approve',this.checked)"></td>
+          <td class="rowact">${p.id===state.user.id?'':`<button class="del" onclick="deleteUser('${p.id}')">${t('delete_user')}</button>`}</td></tr>`).join('')}</tbody></table>
       <div class="hint" style="padding:8px 18px">${t('kyc_perm_hint')}</div>
     </div>
     <div class="hint" style="padding:12px 18px">${t('users_hint')}</div>
@@ -1148,6 +1160,15 @@ async function inviteUser(){
 async function removeInvite(email){await sb.from('invited_roles').delete().eq('email',email);await refresh();}
 async function setRole(id,role){await sb.from('profiles').update({role}).eq('id',id);await refresh();}
 async function setActive(id,active){await sb.from('profiles').update({active}).eq('id',id);await refresh();}
+async function deleteUser(id){
+  const p=(data.profiles||[]).find(x=>x.id===id); if(!p)return;
+  const typed=prompt(t('a_delete_user',{name:p.full_name||p.email,email:p.email}));
+  if(typed==null)return;
+  if(typed.trim().toLowerCase()!==(p.email||'').toLowerCase()){alert(t('a_delete_user_mismatch'));return}
+  const {error}=await sb.rpc('admin_delete_user',{target:id});
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  await refresh(); alert(t('user_deleted',{name:p.full_name||p.email}));
+}
 async function setKycPerm(id,field,on){
   const {error}=await sb.from('profiles').update({[field]:on}).eq('id',id);
   if(error){alert(t('a_could_not_save')+error.message);await refresh();return}
@@ -1201,6 +1222,9 @@ function openEngModal(clientId,engId){
   $('eRevenue').value=e?(e.revenue==null?'':e.revenue):''; $('eStatus').value=e?e.status||'Open':'Open';
   $('eFreq').value=e?e.billing_frequency||'':''; $('eDue').value=e?e.due_date||'':''; updateDueVisibility();
   fillStaff($('ePartner'), e?e.engagement_partner:null); fillStaff($('eManager'), e?e.engagement_manager:null);
+  const canAssign=can('assignClients'); // only equity partners & the admin team build portfolios
+  $('ePartner').disabled=$('eManager').disabled=!canAssign;
+  $('ePartner').title=$('eManager').title=canAssign?'':t('assign_only_admin');
   $('eLetter').value=(e&&e.letter_signed)?'yes':'no'; $('eLetterDate').value=e?e.letter_signed_date||'':'';
   $('eDesc').value=e?e.description||'':'';
   $('eFile').value=''; // clear any previous selection
@@ -1221,7 +1245,7 @@ async function saveEngagement(){
   const id=$('ovEng').dataset.id, clientId=$('eClientId').value;
   const payload={client_id:clientId,service_line:$('eService').value.trim(),year:parseInt($('eYear').value)||null,
     status:$('eStatus').value,billing_frequency:$('eFreq').value||null,
-    engagement_partner:$('ePartner').value||null,engagement_manager:$('eManager').value||null,
+    ...(can('assignClients')?{engagement_partner:$('ePartner').value||null,engagement_manager:$('eManager').value||null}:{}),
     due_date:isDeadlineService($('eService').value)?($('eDue').value||null):null, // deadlines only for audit-type work
     letter_signed:$('eLetter').value==='yes',letter_signed_date:$('eLetterDate').value||null,
     description:$('eDesc').value.trim()||null};
@@ -1408,7 +1432,7 @@ function renderCompliance(){
   const panel=(title,body,extra)=>`<div class="panel" style="margin-bottom:16px"><h3>${title}${extra||''}</h3>${body}</div>`;
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-      <div class="hint">${t('portal_intro')}<br>${(()=>{const s=(data.people||[]).filter(p=>p.kyc_approve).map(p=>esc(p.full_name||p.email));
+      <div class="hint">${t('portal_intro')}<br>${(()=>{const s=(data.people||[]).filter(p=>p.kyc_approve&&p.active!==false&&!p.deleted).map(p=>esc(p.full_name||p.email));
         return s.length?t('signoff_people',{names:s.join(', ')}):`<span style="color:#b23b3b">${t('no_signoff')}</span>`;})()}</div>
       ${can('doCompliance')?`<button class="primary" onclick="openStartReview()">${t('start_q_btn')}</button>`:''}</div>
     <div class="stats" style="margin-top:0">
@@ -1679,7 +1703,7 @@ async function saveMembers(){
 function openAssign(clientId){
   const c=clientById(clientId); $('assignTitle').textContent=c?t('m_assign_title',{name:c.name}):t('m_assign_client');
   $('ovAssign').dataset.id=clientId;
-  const mgrs=data.profiles.filter(p=>p.role==='manager');
+  const mgrs=data.profiles.filter(p=>p.role==='manager'||p.role==='partner_ne');
   const assigned=new Set(data.assignments.filter(a=>a.client_id===clientId).map(a=>a.user_id));
   $('assignFields').innerHTML=mgrs.length?mgrs.map(p=>`<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" value="${p.id}" ${assigned.has(p.id)?'checked':''}> ${esc(p.full_name||p.email)}</label>`).join(''):'<div class="hint">'+t('no_managers')+'</div>';
   $('ovAssign').classList.add('show');
