@@ -452,6 +452,7 @@ const I18N={
   l_logo:"Client logo", logo_hint:"PNG, JPG, SVG or WebP, up to 5 MB. Used when preparing proposals.", no_logo:"No logo uploaded yet.",
   download_logo:"Download logo", a_logo_type:"Please choose a PNG, JPG, SVG or WebP image.", a_logo_size:"Logo must be 5 MB or smaller.",
   outstanding:"Outstanding requirements", all_clear:"All requirements met", yes:"Yes", no:"No",
+  firm_title:"Firm details", l_founded:"Firm founded (earliest engagement year)", save_firm:"Save", a_bad_year:"Enter a year between 1900 and this year.",
   policy_title:"Compliance policy", l_interval:"Full KYC/AML renewal every (months)", l_warnmonths:"Warn before renewal (months)", save_policy:"Save policy",
   m_add_eng:"Add engagement", m_edit_eng:"Edit engagement", l_service_line:"Service line *", l_year:"Year *",
   l_revenue:"Revenue *", l_status:"Status", l_description:"Description",
@@ -571,6 +572,7 @@ const I18N={
   l_logo:"شعار العميل", logo_hint:"PNG أو JPG أو SVG أو WebP، بحد أقصى 5 ميجابايت. يُستخدم عند إعداد العروض.", no_logo:"لم يتم رفع شعار بعد.",
   download_logo:"تنزيل الشعار", a_logo_type:"يرجى اختيار صورة PNG أو JPG أو SVG أو WebP.", a_logo_size:"يجب ألا يتجاوز حجم الشعار 5 ميجابايت.",
   outstanding:"المتطلبات المعلّقة", all_clear:"تم استيفاء جميع المتطلبات", yes:"نعم", no:"لا",
+  firm_title:"بيانات المكتب", l_founded:"سنة تأسيس المكتب (أقدم سنة للتكليفات)", save_firm:"حفظ", a_bad_year:"أدخل سنة بين 1900 والسنة الحالية.",
   policy_title:"سياسة الالتزام", l_interval:"تجديد KYC/AML الكامل كل (أشهر)", l_warnmonths:"التنبيه قبل التجديد (أشهر)", save_policy:"حفظ السياسة",
   m_add_eng:"إضافة تكليف", m_edit_eng:"تعديل التكليف", l_service_line:"خط الخدمة *", l_year:"السنة *",
   l_revenue:"الإيراد *", l_status:"الحالة", l_description:"الوصف",
@@ -644,7 +646,7 @@ function fillIndustries(selected){
 function fillYears(sel,selected){
   const now=new Date().getFullYear();
   const cur=selected||now;
-  const ys=[]; for(let y=now+1;y>=now-6;y--) ys.push(y);
+  const ys=[]; for(let y=now+1;y>=foundedYear();y--) ys.push(y);
   if(!ys.includes(cur)) ys.push(cur); // preserve any older/newer existing value
   ys.sort((a,b)=>b-a);
   sel.innerHTML=ys.map(y=>'<option'+(y===cur?' selected':'')+'>'+y+'</option>').join('');
@@ -851,6 +853,9 @@ function ctChips(arr){return (arr&&arr.length)?arr.map(v=>'<span class="chip">'+
 function todayISO(){return new Date().toISOString().slice(0,10)}
 function addMonths(iso,m){const p=(iso||'').split('-').map(Number);if(p.length<3||!p[0])return null;const d=new Date(Date.UTC(p[0],p[1]-1+m,p[2]));return d.toISOString().slice(0,10)}
 function fmtDate(iso){if(!iso)return '—';const p=(iso||'').split('-');return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):iso}
+// Earliest year offered in the engagement year picker; set by a partner in Settings → Firm details
+const DEFAULT_FOUNDED_YEAR=1980;
+function foundedYear(){const v=parseInt((data.policy||{}).founded_year);return (v>=1900&&v<=new Date().getFullYear())?v:DEFAULT_FOUNDED_YEAR}
 function kycInterval(){return Number((data.policy||{}).kyc_interval_months)||36}
 function kycWarn(){return Number((data.policy||{}).kyc_warning_months)||6}
 function clientNextDue(c){return (c.kyc_completed&&c.kyc_last_review)?addMonths(c.kyc_last_review,kycInterval()):null}
@@ -1172,6 +1177,14 @@ function renderUsers(){
     </div>
     <div class="hint" style="padding:12px 18px">${t('users_hint')}</div>
     <div style="border-top:1px solid var(--line);padding:16px 18px">
+      <div style="font-weight:700;margin-bottom:8px">${t('firm_title')}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_founded')}</label><input id="firmFounded" type="number" min="1900" max="${new Date().getFullYear()}" value="${foundedYear()}" style="width:130px"></div>
+        <button class="primary" onclick="saveFirm()">${t('save_firm')}</button>
+        <span class="hint" id="firmMsg"></span>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--line);padding:16px 18px">
       <div style="font-weight:700;margin-bottom:8px">${t('policy_title')}</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
         <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_interval')}</label><input id="polInterval" type="number" min="1" value="${kycInterval()}" style="width:130px"></div>
@@ -1190,6 +1203,13 @@ async function savePolicy(){
     {key:'ac_interval_months',value:String(aiv)},{key:'ac_warning_months',value:String(aw)}]);
   if(error){$('polMsg').textContent=t('a_could_not_save')+error.message;return}
   await refresh(); if($('polMsg'))$('polMsg').textContent='✓';
+}
+async function saveFirm(){
+  const y=parseInt($('firmFounded').value);
+  if(!(y>=1900&&y<=new Date().getFullYear())){$('firmMsg').textContent=t('a_bad_year');return}
+  const {error}=await sb.from('app_settings').upsert([{key:'founded_year',value:String(y)}]);
+  if(error){$('firmMsg').textContent=t('a_could_not_save')+error.message;return}
+  await refresh(); if($('firmMsg'))$('firmMsg').textContent='✓';
 }
 async function inviteUser(){
   const email=$('invEmail').value.trim().toLowerCase(); const role=$('invRole').value;
