@@ -84,6 +84,7 @@
   .rowact{white-space:nowrap}.rowact button{padding:4px 8px;font-size:12px}
   .del:hover{color:#d33;border-color:#d33}
   .backbtn{margin-bottom:14px}
+  .clogo{width:72px;height:72px;flex:none;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px}
   .empty{padding:40px;text-align:center;color:var(--muted)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media(max-width:900px){.grid2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
@@ -234,9 +235,14 @@
         <select id="cAc"><option value="no" data-i18n="no">No</option><option value="yes" data-i18n="yes">Yes</option></select></div>
       <div class="field"><label data-i18n="l_ac_date">A&amp;C date</label><input id="cAcDate" type="date"></div>
     </div>
+    <div class="field"><label data-i18n="l_logo">Client logo</label>
+      <div id="cLogoCurrent" class="hint" style="margin-bottom:6px"></div>
+      <input id="cLogo" type="file" accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp">
+      <div class="hint" data-i18n="logo_hint">PNG, JPG, SVG or WebP, up to 5 MB. Used when preparing proposals.</div>
+    </div>
     <div class="field"><label data-i18n="l_notes">Notes</label><textarea id="cNotes" rows="2"></textarea></div>
   </div>
-  <div class="foot"><button onclick="closeModal('ovClient')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveClient()" data-i18n="save_client">Save client</button></div>
+  <div class="foot"><button onclick="closeModal('ovClient')" data-i18n="cancel">Cancel</button><button id="btnSaveClient" class="primary" onclick="saveClient()" data-i18n="save_client">Save client</button></div>
 </div></div>
 
 <!-- ENGAGEMENT MODAL -->
@@ -431,6 +437,8 @@ const I18N={
   l_letter_file:"Signed letter (file)", letter_file_hint:"PDF or image. Uploaded securely; visible to anyone who can see this client.",
   th_file:"File", view_file:"View", remove_file:"Remove", no_file:"No file uploaded yet.", saving:"Saving…",
   a_remove_file:"Remove this uploaded file?",
+  l_logo:"Client logo", logo_hint:"PNG, JPG, SVG or WebP, up to 5 MB. Used when preparing proposals.", no_logo:"No logo uploaded yet.",
+  download_logo:"Download logo", a_logo_type:"Please choose a PNG, JPG, SVG or WebP image.", a_logo_size:"Logo must be 5 MB or smaller.",
   outstanding:"Outstanding requirements", all_clear:"All requirements met", yes:"Yes", no:"No",
   policy_title:"Compliance policy", l_interval:"Full KYC/AML renewal every (months)", l_warnmonths:"Warn before renewal (months)", save_policy:"Save policy",
   m_add_eng:"Add engagement", m_edit_eng:"Edit engagement", l_service_line:"Service line *", l_year:"Year *",
@@ -543,6 +551,8 @@ const I18N={
   l_letter_file:"خطاب موقّع (ملف)", letter_file_hint:"ملف PDF أو صورة. يُرفع بشكل آمن؛ ويظهر لكل من يمكنه رؤية هذا العميل.",
   th_file:"الملف", view_file:"عرض", remove_file:"إزالة", no_file:"لم يتم رفع أي ملف بعد.", saving:"جارٍ الحفظ…",
   a_remove_file:"إزالة هذا الملف المرفوع؟",
+  l_logo:"شعار العميل", logo_hint:"PNG أو JPG أو SVG أو WebP، بحد أقصى 5 ميجابايت. يُستخدم عند إعداد العروض.", no_logo:"لم يتم رفع شعار بعد.",
+  download_logo:"تنزيل الشعار", a_logo_type:"يرجى اختيار صورة PNG أو JPG أو SVG أو WebP.", a_logo_size:"يجب ألا يتجاوز حجم الشعار 5 ميجابايت.",
   outstanding:"المتطلبات المعلّقة", all_clear:"تم استيفاء جميع المتطلبات", yes:"نعم", no:"لا",
   policy_title:"سياسة الالتزام", l_interval:"تجديد KYC/AML الكامل كل (أشهر)", l_warnmonths:"التنبيه قبل التجديد (أشهر)", save_policy:"حفظ السياسة",
   m_add_eng:"إضافة تكليف", m_edit_eng:"تعديل التكليف", l_service_line:"خط الخدمة *", l_year:"السنة *",
@@ -1035,9 +1045,10 @@ function renderClient(){
   $('clientView').innerHTML=`
    <button class="backbtn" onclick="closeClient()">${t('back')}</button>
    <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-     <div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
+     <div style="display:flex;gap:14px;align-items:flex-start">${c.logo_file?`<img id="clientLogoImg" class="clogo" alt="${esc(c.name)}">`:''}<div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
        <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract].filter(Boolean).map(esc).join(' · ')}</div>
-       ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}</div>
+       ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}
+       ${c.logo_file?`<div class="sub2" style="margin-top:6px"><a href="#" onclick="downloadLogo('${c.id}');return false">${t('download_logo')}</a></div>`:''}</div></div>
      <div style="display:flex;gap:8px">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
        <button class="primary" onclick="openEngModal('${c.id}',null)">${t('add_eng')}</button></div>
    </div></div>
@@ -1073,6 +1084,7 @@ function renderClient(){
        <label style="font-size:12.5px;display:flex;align-items:center;gap:6px;font-weight:600">${t('l_view_year')} ${yearSel}</label>
      </div>${engRows(openY,ccy,rate,fin)}</div>
    ${closedY.length?`<div class="panel"><h3>${t('closed_engagements')}</h3>${engRows(closedY,ccy,rate,fin)}</div>`:''}`;
+  if(c.logo_file)fillLogo($('clientLogoImg'),c.logo_file);
 }
 function engRows(list,ccy,rate,fin){
   if(!list.length)return '<div class="empty">'+t('no_eng_add')+'</div>';
@@ -1193,6 +1205,10 @@ function openClientModal(id){
   ['cKyc','cKycDate','cAc','cAcDate'].forEach(id=>$(id).disabled=!manual);
   $('cKycRow').title=$('cAcRow').title=manual?'':t('via_questionnaire');
   $('cNotes').value=c?c.notes||'':''; $('ovClient').dataset.id=id||'';
+  $('cLogo').value=''; // clear any previous selection
+  const lcur=$('cLogoCurrent');
+  if(c&&c.logo_file){lcur.innerHTML=`<img id="cLogoPreview" class="clogo" alt="" style="width:48px;height:48px;vertical-align:middle"> ${esc(c.logo_file_name||'')} · <a href="#" style="color:#c0392b" onclick="removeLogo('${c.id}','${esc(c.logo_file)}');return false">${t('remove_file')}</a>`;fillLogo($('cLogoPreview'),c.logo_file);}
+  else{lcur.textContent=t('no_logo');}
   updateFRA();
   $('ovClient').classList.add('show');
 }
@@ -1207,11 +1223,63 @@ async function saveClient(){
     group_id:$('cGroup').value||null,
     notes:$('cNotes').value.trim()||null};
   if(!payload.name){alert(t('a_client_required'));return}
-  let err;
-  if(id){({error:err}=await sb.from('clients').update(payload).eq('id',id));}
-  else{({error:err}=await sb.from('clients').insert(payload));}
-  if(err){alert(t('a_could_not_save')+err.message);return}
-  closeModal('ovClient'); await refresh();
+  const logo=$('cLogo').files&&$('cLogo').files[0];
+  if(logo){
+    if(!LOGO_TYPES.includes(logo.type)){alert(t('a_logo_type'));return}
+    if(logo.size>LOGO_MAX){alert(t('a_logo_size'));return}
+  }
+  const btn=$('btnSaveClient'); if(btn){btn.disabled=true; btn.textContent=t('saving');}
+  try{
+    let clientId=id;
+    if(id){const {error}=await sb.from('clients').update(payload).eq('id',id); if(error)throw error;}
+    else{const {data:ins,error}=await sb.from('clients').insert(payload).select('id').single(); if(error)throw error; clientId=ins.id;}
+    if(logo){
+      const old=id&&(clientById(id)||{}).logo_file;
+      const up=await uploadLogo(clientId,logo);
+      const {error}=await sb.from('clients').update({logo_file:up.path,logo_file_name:up.name}).eq('id',clientId);
+      if(error)throw error;
+      if(old&&old!==up.path){try{await sb.storage.from('client-logos').remove([old]);}catch(_){}}
+    }
+    closeModal('ovClient'); await refresh();
+  }catch(e){alert(t('a_could_not_save')+(e.message||e));}
+  finally{if(btn){btn.disabled=false; btn.textContent=t('save_client');}}
+}
+
+/* ---- client logos (private 'client-logos' bucket, same pattern as engagement letters) ---- */
+const LOGO_TYPES=['image/png','image/jpeg','image/svg+xml','image/webp'], LOGO_MAX=5*1024*1024;
+const logoUrlCache={}; // path -> {url,exp}; signed URLs are short-lived, so reuse them while valid
+async function uploadLogo(clientId,file){
+  const safe=(file.name||'logo').replace(/[^\w.\-]+/g,'_');
+  const path=`${clientId}/${Date.now()}_${safe}`;
+  const {error}=await sb.storage.from('client-logos').upload(path,file,{upsert:true,contentType:file.type||undefined});
+  if(error)throw error;
+  return {path,name:file.name||safe};
+}
+async function logoUrl(path){
+  const hit=logoUrlCache[path]; if(hit&&hit.exp>Date.now())return hit.url;
+  const {data,error}=await sb.storage.from('client-logos').createSignedUrl(path,3600);
+  if(error)throw error;
+  logoUrlCache[path]={url:data.signedUrl,exp:Date.now()+50*60*1000};
+  return data.signedUrl;
+}
+async function fillLogo(img,path){
+  if(!img)return;
+  try{img.src=await logoUrl(path);}catch(_){img.remove();}
+}
+async function downloadLogo(clientId){
+  const c=clientById(clientId); if(!c||!c.logo_file)return;
+  const {data,error}=await sb.storage.from('client-logos').createSignedUrl(c.logo_file,120,{download:c.logo_file_name||true});
+  if(error){alert(error.message);return}
+  window.open(data.signedUrl,'_blank');
+}
+async function removeLogo(clientId,path){
+  if(!confirm(t('a_remove_file')))return;
+  await sb.storage.from('client-logos').remove([path]);
+  const {error}=await sb.from('clients').update({logo_file:null,logo_file_name:null}).eq('id',clientId);
+  if(error){alert(error.message);return}
+  delete logoUrlCache[path];
+  const cur=$('cLogoCurrent'); if(cur&&$('ovClient').classList.contains('show'))cur.textContent=t('no_logo');
+  await refresh();
 }
 function openEngModal(clientId,engId){
   const e=engId?data.engagements.find(x=>x.id===engId):null;
