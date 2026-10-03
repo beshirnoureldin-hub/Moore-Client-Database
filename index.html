@@ -77,6 +77,9 @@
   .rank{width:34px;color:var(--muted);font-weight:700}.rank.top{color:var(--brand)}
   .chip{display:inline-block;background:var(--chip);color:var(--muted);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:600;margin:1px 2px}
   .chip.st-open{background:#e6f6ee;color:#1f9d6b}.chip.st-closed{background:#eef1f8;color:#66738c}
+  .chip.rel-current{background:#e6f6ee;color:#1f7a4d}.chip.rel-former{background:#eef1f8;color:#66738c}
+  .chip.rel-manual::after{content:" •";opacity:.7}
+  .relfilter{min-width:150px}
   .code{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700}
   .linkname{color:var(--brand);font-weight:700;cursor:pointer}.linkname:hover{text-decoration:underline}
   .sub2{color:var(--muted);font-size:11px;margin-top:3px}
@@ -123,6 +126,47 @@
   .authtoggle a{color:var(--brand);cursor:pointer;font-weight:600}
   .loader{padding:60px;text-align:center;color:var(--muted)}
   .langlink{cursor:pointer;color:var(--brand);font-weight:700;font-size:12px}
+  /* Credentials (proposal export) */
+  .credf{padding:14px 18px;display:grid;gap:12px}
+  .credrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+  .credrow>.flbl{font-weight:600;font-size:12px;color:var(--muted);min-width:110px}
+  .fgrp{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .fchip{cursor:pointer;display:inline-block;border:1px solid var(--line);border-radius:20px;padding:4px 11px;font-size:12px;font-weight:600;background:var(--panel);color:var(--ink);user-select:none}
+  .fchip:hover{border-color:var(--brand)}
+  .fchip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .fdept{font-size:11px;color:var(--muted);font-weight:700;cursor:pointer;margin-inline-end:2px}
+  .fdept:hover{color:var(--brand)}
+  .seg{display:inline-flex;gap:4px}.seg button{padding:5px 12px;font-size:12px}
+  .credf select{padding:6px 9px}
+  .credbar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:14px 0}
+  .credbar label{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;font-weight:600}
+  .credbar input[type=checkbox]{accent-color:var(--brand);margin:0}
+  .credgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .credcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px;position:relative;box-shadow:var(--shadow)}
+  .credcard:hover{border-color:var(--brand)}
+  .credcard.off{opacity:.45;box-shadow:none}
+  .credcard .tick{position:absolute;top:10px;inset-inline-end:10px;accent-color:var(--brand);margin:0}
+  .credcard .nm{font-weight:700;padding-inline-end:20px}
+  .logobox{height:64px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed var(--line);border-radius:8px;overflow:hidden}
+  .logobox img{max-height:56px;max-width:90%;object-fit:contain}
+  .logobox .ini{font-weight:700;color:#b3bccd;font-size:20px;letter-spacing:.05em}
+  #printView{display:none}
+  .pv{color:#16202b;font-size:11px}
+  .pv-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:3px solid #00aeef;padding-bottom:8px;margin-bottom:14px}
+  .pv-head img{height:32px}
+  .pv h1{font-size:19px;margin:0 0 2px}
+  .pv .meta{font-size:10px;color:#66738c}
+  .pv-wall{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px}
+  .pv-tile{border:1px solid #e4e8f2;border-radius:6px;height:68px;display:flex;align-items:center;justify-content:center;padding:6px;text-align:center;font-size:10px;font-weight:700;break-inside:avoid}
+  .pv-tile img{max-width:100%;max-height:100%;object-fit:contain}
+  .pv table th,.pv table td{font-size:10px;padding:5px 6px}
+  .pv tr{break-inside:avoid}
+  @media print{
+    @page{size:A4;margin:14mm}
+    body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body>*:not(#printView){display:none!important}
+    #printView{display:block!important}
+  }
   /* RTL */
   [dir=rtl] th,[dir=rtl] td{text-align:right}
   [dir=rtl] td.num,[dir=rtl] th.num{text-align:left}
@@ -176,6 +220,7 @@
       <button id="btnRates" onclick="openRates()" data-i18n="exchange_rates">💱 Exchange rates</button>
       <button id="btnUsers" onclick="setTab('users')" class="ghost" data-i18n="settings">⚙ Settings</button>
       <div class="spacer"></div>
+      <select id="relFilter" class="relfilter" onchange="renderAll()"><option value="" data-i18n="rel_all">All clients</option><option value="current" data-i18n="rel_current_pl">Current clients</option><option value="former" data-i18n="rel_former_pl">Former clients</option></select>
       <input class="search" id="search" data-i18n-ph="search_ph" placeholder="Search client or service…" oninput="renderAll()">
     </div>
     <div class="tabs" id="tabs">
@@ -183,6 +228,7 @@
       <button class="tab hidden" data-tab="partners" onclick="setTab('partners')" id="tabPartners" data-i18n="tab_by_partner">Clients by partner</button>
       <button class="tab hidden" data-tab="managers" onclick="setTab('managers')" id="tabManagers" data-i18n="tab_by_manager">Clients by manager</button>
       <button class="tab" data-tab="engagements" onclick="setTab('engagements')" data-i18n="tab_eng">All engagements</button>
+      <button class="tab" data-tab="credentials" onclick="setTab('credentials')" data-i18n="tab_cred">Credentials</button>
       <button class="tab" data-tab="clients" onclick="setTab('clients')" id="tabClients">Client ranking</button>
       <button class="tab hidden" data-tab="compliance" onclick="setTab('compliance')" id="tabCompliance"><span data-i18n="tab_compliance">Compliance</span><span id="compBadge" class="abadge amber hidden"></span></button>
       <button class="tab" data-tab="alerts" onclick="setTab('alerts')" id="tabAlerts"><span data-i18n="tab_alerts">Alerts</span><span id="alertBadge" class="abadge hidden"></span></button>
@@ -191,6 +237,7 @@
     <div id="mainView">
       <div id="tab-clients" class="hidden"><div class="panel"><h3 id="clientsTitle">Clients — ranked by revenue (EGP)</h3><div id="clientsTable"></div></div></div>
       <div id="tab-engagements" class="hidden"><div class="panel"><h3 data-i18n="tab_eng">All engagements</h3><div id="engTable"></div></div></div>
+      <div id="tab-credentials" class="hidden"><div id="credView"></div></div>
       <div id="tab-list"><div class="panel"><h3 data-i18n="tab_list">Client list</h3><div id="listTable"></div></div></div>
       <div id="tab-compliance" class="hidden"><div id="complianceTable"></div></div>
       <div id="tab-alerts" class="hidden"><div id="alertsTable"></div></div>
@@ -201,6 +248,9 @@
     <div id="clientView" class="hidden"></div>
   </div>
 </div>
+
+<!-- PRINT (credentials export; only shown when printing) -->
+<div id="printView"></div>
 
 <!-- CLIENT MODAL -->
 <div class="overlay" id="ovClient"><div class="modal">
@@ -240,6 +290,9 @@
       <input id="cLogo" type="file" accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp">
       <div class="hint" data-i18n="logo_hint">PNG, JPG, SVG or WebP, up to 5 MB. Used when preparing proposals.</div>
     </div>
+    <div class="field"><label data-i18n="l_relationship">Client relationship</label>
+      <select id="cRel"><option value="" data-i18n="rel_auto">Automatic (from engagements)</option><option value="current" data-i18n="rel_current">Current</option><option value="former" data-i18n="rel_former">Former</option></select>
+      <div class="hint" data-i18n="rel_hint">Automatic: current while any engagement is open or the latest engagement is from this year or last year; otherwise former.</div></div>
     <div class="field"><label data-i18n="l_notes">Notes</label><textarea id="cNotes" rows="2"></textarea></div>
   </div>
   <div class="foot"><button onclick="closeModal('ovClient')" data-i18n="cancel">Cancel</button><button id="btnSaveClient" class="primary" onclick="saveClient()" data-i18n="save_client">Save client</button></div>
@@ -424,6 +477,11 @@ const I18N={
   eng_partner_short:"Partner", eng_manager_short:"Manager",
   contract_at:"Contract: {ccy} @ {rate} EGP", contract_egp:"Contract: EGP",
   st_open:"Open", st_closed:"Closed",
+  th_relationship:"Relationship", l_relationship:"Client relationship", rel_auto:"Automatic (from engagements)",
+  rel_current:"Current", rel_former:"Former", rel_all:"All clients", rel_current_pl:"Current clients", rel_former_pl:"Former clients",
+  rel_hint:"Automatic: current while any engagement is open or the latest engagement is from this year or last year; otherwise former.",
+  rel_manual:"Set manually", rel_why_open:"Has an open engagement", rel_why_recent:"Latest engagement: {y}", rel_why_none:"No engagements yet",
+  a_rel_migration:"Saved, but the client relationship was not stored: the database needs the relationship_status column (see supabase/migrations).",
   m_add_client:"Add client", m_edit_client:"Edit client", l_client_name:"Client name *", l_industry:"Industry",
   l_legal:"Legal structure", l_currency:"Contractual currency", l_notes:"Notes", opt_select:"Select…",
   ct_label:"Client type", ct_transnational:"Transnational", ct_pie:"PIE", ct_listed:"Listed", ct_family:"Family owned", ct_private:"Private", ct_government:"Government", ct_fra:"FRA Regulated", th_type:"Type",
@@ -440,6 +498,7 @@ const I18N={
   l_logo:"Client logo", logo_hint:"PNG, JPG, SVG or WebP, up to 5 MB. Used when preparing proposals.", no_logo:"No logo uploaded yet.",
   download_logo:"Download logo", a_logo_type:"Please choose a PNG, JPG, SVG or WebP image.", a_logo_size:"Logo must be 5 MB or smaller.",
   outstanding:"Outstanding requirements", all_clear:"All requirements met", yes:"Yes", no:"No",
+  firm_title:"Firm details", l_founded:"Firm founded (earliest engagement year)", save_firm:"Save", a_bad_year:"Enter a year between 1900 and this year.",
   policy_title:"Compliance policy", l_interval:"Full KYC/AML renewal every (months)", l_warnmonths:"Warn before renewal (months)", save_policy:"Save policy",
   m_add_eng:"Add engagement", m_edit_eng:"Edit engagement", l_service_line:"Service line *", l_year:"Year *",
   l_revenue:"Revenue *", l_status:"Status", l_description:"Description",
@@ -464,7 +523,19 @@ const I18N={
   a_email_pass:"Enter your email and password.", a_signin_failed:"Sign-in failed.", a_account_created:"Account created — signing you in…",
   a_client_required:"Client name is required.", a_eng_required:"Service line and year are required.",
   a_valid_email:"Enter a valid email address.", a_could_not_add:"Could not add: ", a_could_not_save:"Could not save: ",
-  a_delete_eng:"Delete this engagement?", a_something_wrong:"Something went wrong: "
+  a_delete_eng:"Delete this engagement?", a_something_wrong:"Something went wrong: ",
+  tab_cred:"Credentials", cred_title:"Credentials for proposals",
+  cred_intro:"Filter past and current clients, untick any you don't want to show, then print or download the list for a proposal. Revenue is never included.",
+  f_services:"Service lines", f_industry:"Industry", f_status:"Client status", f_years:"Years", f_logo:"Logo", f_sort:"Sort by",
+  all_word:"All", to_word:"to", any_year:"Any",
+  logo_any:"Any", logo_with:"Has logo", logo_without:"Missing logo",
+  sort_name:"Name (A–Z)", sort_recent:"Most recent work", sort_industry:"Industry",
+  cred_status_note:"Current or former follows each client's relationship setting. Clients with no engagements are left out.",
+  reset_filters:"Reset filters", n_sel:"{n} of {total} clients selected", select_all:"Select all", select_none:"Clear selection",
+  opt_wall:"Logo wall", opt_table:"Client list", opt_status:"Show current / former",
+  l_export_title:"Title", def_export_title:"Selected credentials", print_btn:"🖨 Print / PDF", csv_btn:"⬇ Download CSV",
+  no_cred:"No clients match these filters.", nothing_selected:"Select at least one client to export.",
+  th_years:"Years", prepared_on:"Prepared {d}", n_clients:"{n} clients"
  },
  ar:{
   app_title:"قاعدة بيانات العملاء", signin_sub:"Moore Egypt — سجّل الدخول للمتابعة",
@@ -538,6 +609,11 @@ const I18N={
   eng_partner_short:"الشريك", eng_manager_short:"المدير",
   contract_at:"التعاقد: {ccy} @ {rate} ج.م", contract_egp:"التعاقد: بالجنيه",
   st_open:"مفتوح", st_closed:"مغلق",
+  th_relationship:"العلاقة", l_relationship:"علاقة العميل", rel_auto:"تلقائي (حسب الارتباطات)",
+  rel_current:"حالي", rel_former:"سابق", rel_all:"كل العملاء", rel_current_pl:"العملاء الحاليون", rel_former_pl:"العملاء السابقون",
+  rel_hint:"تلقائي: يكون العميل حالياً طالما لديه ارتباط مفتوح أو كان آخر ارتباط في هذا العام أو العام الماضي، وإلا يُعتبر سابقاً.",
+  rel_manual:"محدد يدوياً", rel_why_open:"لديه ارتباط مفتوح", rel_why_recent:"آخر ارتباط: {y}", rel_why_none:"لا توجد ارتباطات بعد",
+  a_rel_migration:"تم الحفظ، لكن لم تُحفظ علاقة العميل: قاعدة البيانات تحتاج إلى العمود relationship_status (راجع supabase/migrations).",
   m_add_client:"إضافة عميل", m_edit_client:"تعديل العميل", l_client_name:"اسم العميل *", l_industry:"المجال",
   l_legal:"الكيان القانوني", l_currency:"العملة التعاقدية", l_notes:"ملاحظات", opt_select:"اختر…",
   ct_label:"نوع العميل", ct_transnational:"عابر للحدود", ct_pie:"كيان ذو مصلحة عامة (PIE)", ct_listed:"مُدرجة", ct_family:"مملوكة لعائلة", ct_private:"خاصة", ct_government:"حكومية", ct_fra:"خاضع لرقابة الهيئة العامة للرقابة المالية", th_type:"النوع",
@@ -554,6 +630,7 @@ const I18N={
   l_logo:"شعار العميل", logo_hint:"PNG أو JPG أو SVG أو WebP، بحد أقصى 5 ميجابايت. يُستخدم عند إعداد العروض.", no_logo:"لم يتم رفع شعار بعد.",
   download_logo:"تنزيل الشعار", a_logo_type:"يرجى اختيار صورة PNG أو JPG أو SVG أو WebP.", a_logo_size:"يجب ألا يتجاوز حجم الشعار 5 ميجابايت.",
   outstanding:"المتطلبات المعلّقة", all_clear:"تم استيفاء جميع المتطلبات", yes:"نعم", no:"لا",
+  firm_title:"بيانات المكتب", l_founded:"سنة تأسيس المكتب (أقدم سنة للتكليفات)", save_firm:"حفظ", a_bad_year:"أدخل سنة بين 1900 والسنة الحالية.",
   policy_title:"سياسة الالتزام", l_interval:"تجديد KYC/AML الكامل كل (أشهر)", l_warnmonths:"التنبيه قبل التجديد (أشهر)", save_policy:"حفظ السياسة",
   m_add_eng:"إضافة تكليف", m_edit_eng:"تعديل التكليف", l_service_line:"خط الخدمة *", l_year:"السنة *",
   l_revenue:"الإيراد *", l_status:"الحالة", l_description:"الوصف",
@@ -578,7 +655,19 @@ const I18N={
   a_email_pass:"أدخل بريدك وكلمة المرور.", a_signin_failed:"فشل تسجيل الدخول.", a_account_created:"تم إنشاء الحساب — جارٍ تسجيل دخولك…",
   a_client_required:"اسم العميل مطلوب.", a_eng_required:"خط الخدمة والسنة مطلوبان.",
   a_valid_email:"أدخل بريداً إلكترونياً صحيحاً.", a_could_not_add:"تعذّر الإضافة: ", a_could_not_save:"تعذّر الحفظ: ",
-  a_delete_eng:"حذف هذا التكليف؟", a_something_wrong:"حدث خطأ ما: "
+  a_delete_eng:"حذف هذا التكليف؟", a_something_wrong:"حدث خطأ ما: ",
+  tab_cred:"سابقة الأعمال", cred_title:"سابقة الأعمال للعروض",
+  cred_intro:"صفِّ العملاء الحاليين والسابقين، وألغِ تحديد من لا تريد عرضه، ثم اطبع القائمة أو نزّلها لاستخدامها في عرض. لا تُدرج الإيرادات أبداً.",
+  f_services:"خطوط الخدمة", f_industry:"المجال", f_status:"حالة العميل", f_years:"السنوات", f_logo:"الشعار", f_sort:"الترتيب حسب",
+  all_word:"الكل", to_word:"إلى", any_year:"أي سنة",
+  logo_any:"الكل", logo_with:"له شعار", logo_without:"بدون شعار",
+  sort_name:"الاسم (أ–ي)", sort_recent:"أحدث عمل", sort_industry:"المجال",
+  cred_status_note:"حالي أو سابق يتبع إعداد علاقة كل عميل. يُستبعد العملاء الذين ليس لديهم تكليفات.",
+  reset_filters:"مسح عوامل التصفية", n_sel:"تم تحديد {n} من {total} عميل", select_all:"تحديد الكل", select_none:"إلغاء التحديد",
+  opt_wall:"لوحة الشعارات", opt_table:"قائمة العملاء", opt_status:"إظهار حالي / سابق",
+  l_export_title:"العنوان", def_export_title:"سابقة أعمال مختارة", print_btn:"🖨 طباعة / PDF", csv_btn:"⬇ تنزيل CSV",
+  no_cred:"لا يوجد عملاء مطابقون لعوامل التصفية.", nothing_selected:"حدّد عميلاً واحداً على الأقل للتصدير.",
+  th_years:"السنوات", prepared_on:"أُعدّ في {d}", n_clients:"{n} عميل"
  }
 };
 function t(k,v){let s=(I18N[state.lang]&&I18N[state.lang][k])!=null?I18N[state.lang][k]:(I18N.en[k]!=null?I18N.en[k]:k);
@@ -627,7 +716,7 @@ function fillIndustries(selected){
 function fillYears(sel,selected){
   const now=new Date().getFullYear();
   const cur=selected||now;
-  const ys=[]; for(let y=now+1;y>=now-6;y--) ys.push(y);
+  const ys=[]; for(let y=now+1;y>=foundedYear();y--) ys.push(y);
   if(!ys.includes(cur)) ys.push(cur); // preserve any older/newer existing value
   ys.sort((a,b)=>b-a);
   sel.innerHTML=ys.map(y=>'<option'+(y===cur?' selected':'')+'>'+y+'</option>').join('');
@@ -746,7 +835,21 @@ function toEGP(e){const c=clientById(e.client_id);return (Number(e.revenue)||0)*
 function clientById(id){return data.clients.find(c=>c.id===id)}
 function engForClient(id){return data.engagements.filter(e=>e.client_id===id)}
 function searchTerm(){return $('search').value.trim().toLowerCase()}
-function filteredClients(){const q=searchTerm();return data.clients.filter(c=>{if(!q)return true;const g=groupOf(c);
+// Current vs former client: a manual override (clients.relationship_status) wins; otherwise derived from engagements.
+// Automatic rule: current while any engagement is open, or the latest engagement year is this year or last year.
+function clientRelationship(c){
+  const engs=engForClient(c.id);
+  const lastYear=engs.reduce((m,e)=>Math.max(m,+e.year||0),0)||null;
+  if(c.relationship_status==='current'||c.relationship_status==='former')return {status:c.relationship_status,manual:true,lastYear,why:t('rel_manual')};
+  if(!engs.length)return {status:'current',manual:false,lastYear,why:t('rel_why_none')};
+  if(engs.some(e=>(e.status||'Open')==='Open'))return {status:'current',manual:false,lastYear,why:t('rel_why_open')};
+  const nowY=new Date().getFullYear();
+  return {status:lastYear&&lastYear>=nowY-1?'current':'former',manual:false,lastYear,why:lastYear?t('rel_why_recent',{y:lastYear}):t('rel_why_none')};
+}
+function relChip(c){const r=clientRelationship(c);
+  return `<span class="chip rel-${r.status}${r.manual?' rel-manual':''}" title="${esc(r.why)}">${t('rel_'+r.status)}</span>`;}
+function relFilterVal(){const el=$('relFilter');return el?el.value:''}
+function filteredClients(){const q=searchTerm(), rf=relFilterVal();return data.clients.filter(c=>{if(rf&&clientRelationship(c).status!==rf)return false;if(!q)return true;const g=groupOf(c);
   return (c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q)||(g&&((g.name||'').toLowerCase().includes(q)||(g.group_code||'').toLowerCase().includes(q)));});}
 function groupById(id){return (data.groups||[]).find(g=>g.id===id)}
 function groupOf(c){return c&&c.group_id?groupById(c.group_id):null}
@@ -820,6 +923,9 @@ function ctChips(arr){return (arr&&arr.length)?arr.map(v=>'<span class="chip">'+
 function todayISO(){return new Date().toISOString().slice(0,10)}
 function addMonths(iso,m){const p=(iso||'').split('-').map(Number);if(p.length<3||!p[0])return null;const d=new Date(Date.UTC(p[0],p[1]-1+m,p[2]));return d.toISOString().slice(0,10)}
 function fmtDate(iso){if(!iso)return '—';const p=(iso||'').split('-');return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):iso}
+// Earliest year offered in the engagement year picker; set by a partner in Settings → Firm details
+const DEFAULT_FOUNDED_YEAR=1980;
+function foundedYear(){const v=parseInt((data.policy||{}).founded_year);return (v>=1900&&v<=new Date().getFullYear())?v:DEFAULT_FOUNDED_YEAR}
 function kycInterval(){return Number((data.policy||{}).kyc_interval_months)||36}
 function kycWarn(){return Number((data.policy||{}).kyc_warning_months)||6}
 function clientNextDue(c){return (c.kyc_completed&&c.kyc_last_review)?addMonths(c.kyc_last_review,kycInterval()):null}
@@ -923,7 +1029,7 @@ function statusDot(st){const col={red:'#d64352',yellow:'#e0a81e',green:'#16b685'
 function statusCell(c){const st=clientStatus(c);return `<div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0]||'')}</span></div>`}
 
 /* ============ RENDER ============ */
-function renderAll(){ if(can('seePortfolioDash')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('manageUsers'))renderUsers(); }
+function renderAll(){ if(can('seePortfolioDash')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); renderCredentials(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('manageUsers'))renderUsers(); }
 
 function renderStats(){
   const el=$('stats'); const clients=data.clients.length;
@@ -967,7 +1073,7 @@ function renderClients(){
   const clientRow=(r,rank,indent)=>`<tr${indent?' style="background:var(--brand-soft)"':''}><td class="rank ${!indent&&rank<=3&&fin?'top':''}">${fin&&!indent?rank:''}</td>
       <td>${statusCell(r.c)}</td>
       <td class="code">${r.c.client_code}</td>
-      <td${indent?' style="padding-inline-start:28px"':''}><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span>${indent?'':groupChip(groupOf(r.c))}<div class="sub2">${[r.c.industry,ctStr(r.c.client_types),r.c.legal_structure,r.c.contract_currency].filter(Boolean).map(esc).join(' · ')}</div></td>
+      <td${indent?' style="padding-inline-start:28px"':''}><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span>${indent?'':groupChip(groupOf(r.c))} ${relChip(r.c)}<div class="sub2">${[r.c.industry,ctStr(r.c.client_types),r.c.legal_structure,r.c.contract_currency].filter(Boolean).map(esc).join(' · ')}</div></td>
       ${fin?`<td class="num money">${money(r.total)}</td>`:''}
       <td class="num">${r.count}</td>
       <td>${svcChips(r.services)}</td></tr>`;
@@ -1004,9 +1110,10 @@ function renderList(){
   const el=$('listTable'); const list=filteredClients();
   if(!list.length){el.innerHTML='<div class="empty">'+t('no_clients')+'</div>';return}
   const assign=can('assignClients');
-  el.innerHTML=`<table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
+  el.innerHTML=`<table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_relationship')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
     list.map(c=>{const svc=[...new Set(engForClient(c.id).map(e=>e.service_line).filter(Boolean))];
     return `<tr><td>${statusCell(c)}</td>
+      <td>${relChip(c)}</td>
       <td>${esc(c.industry||'—')}</td>
       <td>${ctChips(c.client_types)}</td>
       <td>${svc.length?svc.map(s=>`<span class="chip">${esc(s)}</span>`).join(''):'—'}</td>
@@ -1045,7 +1152,7 @@ function renderClient(){
   $('clientView').innerHTML=`
    <button class="backbtn" onclick="closeClient()">${t('back')}</button>
    <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-     <div style="display:flex;gap:14px;align-items:flex-start">${c.logo_file?`<img id="clientLogoImg" class="clogo" alt="${esc(c.name)}">`:''}<div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
+     <div style="display:flex;gap:14px;align-items:flex-start">${c.logo_file?`<img id="clientLogoImg" class="clogo" alt="${esc(c.name)}">`:''}<div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)} <span style="font-size:13px">${relChip(c)}</span>${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
        <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract].filter(Boolean).map(esc).join(' · ')}</div>
        ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}
        ${c.logo_file?`<div class="sub2" style="margin-top:6px"><a href="#" onclick="downloadLogo('${c.id}');return false">${t('download_logo')}</a></div>`:''}</div></div>
@@ -1140,6 +1247,14 @@ function renderUsers(){
     </div>
     <div class="hint" style="padding:12px 18px">${t('users_hint')}</div>
     <div style="border-top:1px solid var(--line);padding:16px 18px">
+      <div style="font-weight:700;margin-bottom:8px">${t('firm_title')}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_founded')}</label><input id="firmFounded" type="number" min="1900" max="${new Date().getFullYear()}" value="${foundedYear()}" style="width:130px"></div>
+        <button class="primary" onclick="saveFirm()">${t('save_firm')}</button>
+        <span class="hint" id="firmMsg"></span>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--line);padding:16px 18px">
       <div style="font-weight:700;margin-bottom:8px">${t('policy_title')}</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
         <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_interval')}</label><input id="polInterval" type="number" min="1" value="${kycInterval()}" style="width:130px"></div>
@@ -1158,6 +1273,13 @@ async function savePolicy(){
     {key:'ac_interval_months',value:String(aiv)},{key:'ac_warning_months',value:String(aw)}]);
   if(error){$('polMsg').textContent=t('a_could_not_save')+error.message;return}
   await refresh(); if($('polMsg'))$('polMsg').textContent='✓';
+}
+async function saveFirm(){
+  const y=parseInt($('firmFounded').value);
+  if(!(y>=1900&&y<=new Date().getFullYear())){$('firmMsg').textContent=t('a_bad_year');return}
+  const {error}=await sb.from('app_settings').upsert([{key:'founded_year',value:String(y)}]);
+  if(error){$('firmMsg').textContent=t('a_could_not_save')+error.message;return}
+  await refresh(); if($('firmMsg'))$('firmMsg').textContent='✓';
 }
 async function inviteUser(){
   const email=$('invEmail').value.trim().toLowerCase(); const role=$('invRole').value;
@@ -1204,6 +1326,7 @@ function openClientModal(id){
   const manual=can('manualCompliance'); // compliance staff complete KYC/A&C only through an approved questionnaire
   ['cKyc','cKycDate','cAc','cAcDate'].forEach(id=>$(id).disabled=!manual);
   $('cKycRow').title=$('cAcRow').title=manual?'':t('via_questionnaire');
+  $('cRel').value=c?c.relationship_status||'':'';
   $('cNotes').value=c?c.notes||'':''; $('ovClient').dataset.id=id||'';
   $('cLogo').value=''; // clear any previous selection
   const lcur=$('cLogoCurrent');
@@ -1221,6 +1344,7 @@ async function saveClient(){
     kyc_completed:$('cKyc').value==='yes', kyc_last_review:$('cKycDate').value||null,
     ac_completed:$('cAc').value==='yes', ac_date:$('cAcDate').value||null,
     group_id:$('cGroup').value||null,
+    relationship_status:$('cRel').value||null,
     notes:$('cNotes').value.trim()||null};
   if(!payload.name){alert(t('a_client_required'));return}
   const logo=$('cLogo').files&&$('cLogo').files[0];
@@ -1231,8 +1355,13 @@ async function saveClient(){
   const btn=$('btnSaveClient'); if(btn){btn.disabled=true; btn.textContent=t('saving');}
   try{
     let clientId=id;
-    if(id){const {error}=await sb.from('clients').update(payload).eq('id',id); if(error)throw error;}
-    else{const {data:ins,error}=await sb.from('clients').insert(payload).select('id').single(); if(error)throw error; clientId=ins.id;}
+    const write=p=>id?sb.from('clients').update(p).eq('id',id):sb.from('clients').insert(p).select('id').single();
+    let res=await write(payload);
+    if(res.error&&/relationship_status/.test(res.error.message||'')){ // column not migrated yet: save everything else
+      const {relationship_status,...rest}=payload; res=await write(rest);
+      if(!res.error)alert(t('a_rel_migration'));}
+    if(res.error)throw res.error;
+    if(!id)clientId=res.data.id;
     if(logo){
       const old=id&&(clientById(id)||{}).logo_file;
       const up=await uploadLogo(clientId,logo);
@@ -1786,9 +1915,143 @@ async function saveAssign(){
   closeModal('ovAssign'); await refresh();
 }
 
+/* ============ CREDENTIALS (proposal export) ============ */
+const credDefaults=()=>({svc:new Set(),ind:new Set(),status:'all',from:'',to:'',logo:'any',sort:'name'});
+let cred={...credDefaults(),excluded:new Set(),wall:true,table:true,showStatus:true,title:''};
+// Logos come from the private client-logos bucket; sign all visible ones in one call and keep them in logoUrlCache
+let credLogoFetch=null;
+function initials(name){return String(name||'').split(/\s+/).filter(w=>/^[\p{L}\p{N}]/u.test(w)).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'—'}
+function cachedLogo(c){const h=c&&c.logo_file&&logoUrlCache[c.logo_file];return h&&h.exp>Date.now()?h.url:null}
+function prefetchCredLogos(rows){
+  const paths=[...new Set(rows.map(r=>r.c.logo_file).filter(p=>p&&!cachedLogo({logo_file:p})))];
+  if(!paths.length||credLogoFetch)return;
+  credLogoFetch=sb.storage.from('client-logos').createSignedUrls(paths,3600).then(({data:urls})=>{
+    (urls||[]).forEach(u=>{if(u.signedUrl)logoUrlCache[u.path]={url:u.signedUrl,exp:Date.now()+50*60*1000};});
+  }).catch(e=>console.warn('logos',e)).finally(()=>{credLogoFetch=null;
+    if(paths.some(p=>cachedLogo({logo_file:p})))renderCredentials();});
+}
+function credRows(){
+  const from=cred.from?+cred.from:null, to=cred.to?+cred.to:null, out=[];
+  filteredClients().forEach(c=>{
+    if(cred.ind.size&&!cred.ind.has(c.industry||''))return;
+    if(cred.logo==='with'&&!c.logo_file||cred.logo==='without'&&c.logo_file)return;
+    const all=engForClient(c.id); if(!all.length)return;
+    const current=clientRelationship(c).status==='current';
+    if(cred.status==='current'&&!current||cred.status==='former'&&current)return;
+    const engs=all.filter(e=>(!cred.svc.size||cred.svc.has(e.service_line))&&(from==null||+e.year>=from)&&(to==null||+e.year<=to));
+    if(!engs.length)return;
+    const ys=engs.map(e=>+e.year).filter(Boolean);
+    out.push({c,current,services:[...new Set(engs.map(e=>e.service_line).filter(Boolean))],
+      first:ys.length?Math.min(...ys):null,last:ys.length?Math.max(...ys):null});
+  });
+  const byName=(a,b)=>(a.c.name||'').localeCompare(b.c.name||'');
+  const sorts={name:byName,recent:(a,b)=>(b.last||0)-(a.last||0)||byName(a,b),
+    industry:(a,b)=>(a.c.industry||'￿').localeCompare(b.c.industry||'￿')||byName(a,b)};
+  return out.sort(sorts[cred.sort]||byName);
+}
+function credSelected(){return credRows().filter(r=>!cred.excluded.has(r.c.id))}
+function yearSpan(r){return r.first==null?'—':(r.first===r.last?String(r.first):r.first+'–'+r.last)}
+function credStatusLabel(r){return t(r.current?'rel_current':'rel_former')}
+// service lines grouped by department; anything older/free-text in the data goes under "Other"
+function credServiceGroups(){
+  const known=new Set(SERVICE_GROUPS.flatMap(g=>g.services.map(s=>s.name)));
+  const extra=[...new Set(data.engagements.map(e=>e.service_line).filter(s=>s&&!known.has(s)))].sort();
+  return SERVICE_GROUPS.map(g=>({dept:g.dept,services:g.services.map(s=>s.name).concat(g.dept==='Other'?extra:[])}));
+}
+function credToggleSet(k,v){cred[k].has(v)?cred[k].delete(v):cred[k].add(v);renderCredentials();}
+function credToggleDept(i){const svcs=credServiceGroups()[i].services;const allOn=svcs.every(s=>cred.svc.has(s));
+  svcs.forEach(s=>allOn?cred.svc.delete(s):cred.svc.add(s));renderCredentials();}
+function credSet(k,v){cred[k]=v;renderCredentials();}
+function credReset(){Object.assign(cred,credDefaults());cred.excluded.clear();renderCredentials();}
+function credPick(id){cred.excluded.has(id)?cred.excluded.delete(id):cred.excluded.add(id);renderCredentials();}
+function credSelectAll(on){const ids=credRows().map(r=>r.c.id);ids.forEach(id=>on?cred.excluded.delete(id):cred.excluded.add(id));renderCredentials();}
+function renderCredentials(){
+  const el=$('credView'); if(!el)return;
+  const rows=credRows(), sel=rows.filter(r=>!cred.excluded.has(r.c.id));
+  prefetchCredLogos(rows);
+  const nowY=new Date().getFullYear();
+  const minY=Math.min(nowY,...data.engagements.map(e=>+e.year).filter(Boolean)), years=[];
+  for(let y=nowY;y>=minY;y--) years.push(y);
+  const yearSel=k=>`<select onchange="credSet('${k}',this.value)"><option value="">${t('any_year')}</option>${years.map(y=>`<option${String(cred[k])===String(y)?' selected':''}>${y}</option>`).join('')}</select>`;
+  const chip=(k,v,label)=>`<span class="fchip${cred[k].has(v)?' on':''}" onclick="credToggleSet('${k}',decodeURIComponent('${encodeURIComponent(v).replace(/'/g,'%27')}'))">${esc(label||v)}</span>`;
+  const seg=(k,opts)=>`<span class="seg">${opts.map(([v,l])=>`<button class="${cred[k]===v?'primary':''}" onclick="credSet('${k}','${v}')">${t(l)}</button>`).join('')}</span>`;
+  const svcRow=credServiceGroups().filter(g=>g.services.length).map((g,i)=>`<span class="fgrp"><span class="fdept" onclick="credToggleDept(${i})">${esc(g.dept)}:</span>${g.services.map(s=>chip('svc',s)).join('')}</span>`).join('');
+  const inds=[...new Set(data.clients.filter(c=>engForClient(c.id).length).map(c=>c.industry).filter(Boolean))].sort();
+  const card=r=>{const c=r.c,off=cred.excluded.has(c.id),url=cachedLogo(c);
+    return `<div class="credcard${off?' off':''}" onclick="credPick('${c.id}')">
+      <input type="checkbox" class="tick"${off?'':' checked'} tabindex="-1">
+      <div class="logobox">${url?`<img src="${esc(url)}" alt="${esc(c.name)}">`:`<span class="ini">${esc(initials(c.name))}</span>`}</div>
+      <div class="nm"><span class="linkname" onclick="event.stopPropagation();openClient('${c.id}')">${esc(c.name)}</span></div>
+      <div class="sub2" style="margin:0">${esc(c.industry||'—')} · ${yearSpan(r)}</div>
+      <div><span class="chip rel-${r.current?'current':'former'}">${credStatusLabel(r)}</span>${r.services.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>
+    </div>`;};
+  el.innerHTML=`
+    <div class="panel"><h3>${t('cred_title')}</h3><div class="credf">
+      <div class="hint">${t('cred_intro')}</div>
+      <div class="credrow"><span class="flbl">${t('f_services')}</span>${svcRow}</div>
+      ${inds.length?`<div class="credrow"><span class="flbl">${t('f_industry')}</span><span class="fgrp">${inds.map(v=>chip('ind',v)).join('')}</span></div>`:''}
+      <div class="credrow"><span class="flbl">${t('f_status')}</span>${seg('status',[['all','all_word'],['current','rel_current'],['former','rel_former']])}
+        <span class="flbl" style="min-width:0">${t('f_years')}</span>${yearSel('from')} ${t('to_word')} ${yearSel('to')}</div>
+      <div class="credrow"><span class="flbl">${t('f_logo')}</span>${seg('logo',[['any','logo_any'],['with','logo_with'],['without','logo_without']])}
+        <span class="flbl" style="min-width:0">${t('f_sort')}</span><select onchange="credSet('sort',this.value)">${['name','recent','industry'].map(v=>`<option value="${v}"${cred.sort===v?' selected':''}>${t('sort_'+v)}</option>`).join('')}</select>
+        <span class="spacer"></span><button class="ghost" onclick="credReset()">${t('reset_filters')}</button></div>
+      <div class="hint">${t('cred_status_note')}</div>
+    </div></div>
+    <div class="credbar">
+      <strong>${t('n_sel',{n:sel.length,total:rows.length})}</strong>
+      <button onclick="credSelectAll(true)">${t('select_all')}</button><button onclick="credSelectAll(false)">${t('select_none')}</button>
+      <span class="spacer"></span>
+      <label><input type="checkbox"${cred.wall?' checked':''} onchange="cred.wall=this.checked">${t('opt_wall')}</label>
+      <label><input type="checkbox"${cred.table?' checked':''} onchange="cred.table=this.checked">${t('opt_table')}</label>
+      <label><input type="checkbox"${cred.showStatus?' checked':''} onchange="cred.showStatus=this.checked">${t('opt_status')}</label>
+    </div>
+    <div class="credbar">
+      <label>${t('l_export_title')} <input id="credTitle" value="${esc(cred.title||t('def_export_title'))}" oninput="cred.title=this.value" style="min-width:240px"></label>
+      <span class="spacer"></span>
+      <button onclick="credCsv()">${t('csv_btn')}</button><button class="primary" onclick="credPrint()">${t('print_btn')}</button>
+    </div>
+    ${rows.length?`<div class="credgrid">${rows.map(card).join('')}</div>`:`<div class="panel"><div class="empty">${t('no_cred')}</div></div>`}`;
+}
+function credFilterSummary(){
+  const parts=[];
+  if(cred.svc.size)parts.push([...cred.svc].join(', '));
+  if(cred.ind.size)parts.push([...cred.ind].join(', '));
+  if(cred.status!=='all')parts.push(t('rel_'+cred.status));
+  if(cred.from||cred.to)parts.push((cred.from||'…')+'–'+(cred.to||'…'));
+  return parts.join(' · ');
+}
+function credPrintHtml(rows){
+  const title=cred.title||t('def_export_title'), summary=credFilterSummary();
+  const wall=cred.wall?`<div class="pv-wall">${rows.map(r=>{const url=cachedLogo(r.c);
+    return `<div class="pv-tile" title="${esc(r.c.name)}">${url?`<img src="${esc(url)}" alt="${esc(r.c.name)}">`:esc(r.c.name)}</div>`;}).join('')}</div>`:'';
+  const table=cred.table?`<table><thead><tr><th>#</th><th>${t('th_client')}</th><th>${t('th_industry')}</th><th>${t('th_services')}</th><th>${t('th_years')}</th>${cred.showStatus?`<th>${t('th_relationship')}</th>`:''}</tr></thead><tbody>${
+    rows.map((r,i)=>`<tr><td>${i+1}</td><td><b>${esc(r.c.name)}</b></td><td>${esc(r.c.industry||'—')}</td><td>${esc(r.services.join(', '))}</td><td>${yearSpan(r)}</td>${cred.showStatus?`<td>${credStatusLabel(r)}</td>`:''}</tr>`).join('')}</tbody></table>`:'';
+  return `<div class="pv"><div class="pv-head"><div><h1>${esc(title)}</h1>
+    <div class="meta">${t('n_clients',{n:rows.length})}${summary?' · '+esc(summary):''} · ${t('prepared_on',{d:fmtDate(todayISO())})}</div></div>
+    <img src="${LOGO_IMG}" alt="Moore Egypt"></div>${wall}${table}</div>`;
+}
+async function credPrint(){
+  const rows=credSelected(); if(!rows.length){alert(t('nothing_selected'));return}
+  prefetchCredLogos(rows); if(credLogoFetch)await credLogoFetch;
+  const pv=$('printView'); pv.innerHTML=credPrintHtml(rows);
+  // wait for logos so they make it onto the page
+  await Promise.all([...pv.querySelectorAll('img')].map(img=>img.complete?null:new Promise(r=>{img.onload=img.onerror=r;})));
+  window.print();
+}
+function credCsv(){
+  const rows=credSelected(); if(!rows.length){alert(t('nothing_selected'));return}
+  const q=v=>{const s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const head=[t('th_code'),t('th_client'),t('group_word'),t('th_industry'),t('th_type'),t('th_services'),t('th_years'),t('th_relationship')];
+  const lines=[head].concat(rows.map(r=>{const g=groupOf(r.c);
+    return [r.c.client_code,r.c.name,g?g.name:'',r.c.industry||'',ctStr(r.c.client_types),r.services.join('; '),yearSpan(r),credStatusLabel(r)];}));
+  const blob=new Blob(['﻿'+lines.map(l=>l.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`credentials-${todayISO()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
 /* ============ MISC ============ */
 function setTab(tb){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tb));
-  ['clients','engagements','list','partners','managers','compliance','alerts','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
+  ['clients','engagements','credentials','list','partners','managers','compliance','alerts','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
   if(viewClientId||viewGroupId||viewReviewId)closeClient();}
 function closeModal(id){$(id).classList.remove('show');}
 function goHome(){
