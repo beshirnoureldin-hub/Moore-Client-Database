@@ -126,6 +126,47 @@
   .authtoggle a{color:var(--brand);cursor:pointer;font-weight:600}
   .loader{padding:60px;text-align:center;color:var(--muted)}
   .langlink{cursor:pointer;color:var(--brand);font-weight:700;font-size:12px}
+  /* Credentials (proposal export) */
+  .credf{padding:14px 18px;display:grid;gap:12px}
+  .credrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+  .credrow>.flbl{font-weight:600;font-size:12px;color:var(--muted);min-width:110px}
+  .fgrp{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .fchip{cursor:pointer;display:inline-block;border:1px solid var(--line);border-radius:20px;padding:4px 11px;font-size:12px;font-weight:600;background:var(--panel);color:var(--ink);user-select:none}
+  .fchip:hover{border-color:var(--brand)}
+  .fchip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .fdept{font-size:11px;color:var(--muted);font-weight:700;cursor:pointer;margin-inline-end:2px}
+  .fdept:hover{color:var(--brand)}
+  .seg{display:inline-flex;gap:4px}.seg button{padding:5px 12px;font-size:12px}
+  .credf select{padding:6px 9px}
+  .credbar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:14px 0}
+  .credbar label{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;font-weight:600}
+  .credbar input[type=checkbox]{accent-color:var(--brand);margin:0}
+  .credgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .credcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px;position:relative;box-shadow:var(--shadow)}
+  .credcard:hover{border-color:var(--brand)}
+  .credcard.off{opacity:.45;box-shadow:none}
+  .credcard .tick{position:absolute;top:10px;inset-inline-end:10px;accent-color:var(--brand);margin:0}
+  .credcard .nm{font-weight:700;padding-inline-end:20px}
+  .logobox{height:64px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed var(--line);border-radius:8px;overflow:hidden}
+  .logobox img{max-height:56px;max-width:90%;object-fit:contain}
+  .logobox .ini{font-weight:700;color:#b3bccd;font-size:20px;letter-spacing:.05em}
+  #printView{display:none}
+  .pv{color:#16202b;font-size:11px}
+  .pv-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:3px solid #00aeef;padding-bottom:8px;margin-bottom:14px}
+  .pv-head img{height:32px}
+  .pv h1{font-size:19px;margin:0 0 2px}
+  .pv .meta{font-size:10px;color:#66738c}
+  .pv-wall{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px}
+  .pv-tile{border:1px solid #e4e8f2;border-radius:6px;height:68px;display:flex;align-items:center;justify-content:center;padding:6px;text-align:center;font-size:10px;font-weight:700;break-inside:avoid}
+  .pv-tile img{max-width:100%;max-height:100%;object-fit:contain}
+  .pv table th,.pv table td{font-size:10px;padding:5px 6px}
+  .pv tr{break-inside:avoid}
+  @media print{
+    @page{size:A4;margin:14mm}
+    body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body>*:not(#printView){display:none!important}
+    #printView{display:block!important}
+  }
   /* RTL */
   [dir=rtl] th,[dir=rtl] td{text-align:right}
   [dir=rtl] td.num,[dir=rtl] th.num{text-align:left}
@@ -187,6 +228,7 @@
       <button class="tab hidden" data-tab="partners" onclick="setTab('partners')" id="tabPartners" data-i18n="tab_by_partner">Clients by partner</button>
       <button class="tab hidden" data-tab="managers" onclick="setTab('managers')" id="tabManagers" data-i18n="tab_by_manager">Clients by manager</button>
       <button class="tab" data-tab="engagements" onclick="setTab('engagements')" data-i18n="tab_eng">All engagements</button>
+      <button class="tab" data-tab="credentials" onclick="setTab('credentials')" data-i18n="tab_cred">Credentials</button>
       <button class="tab" data-tab="clients" onclick="setTab('clients')" id="tabClients">Client ranking</button>
       <button class="tab hidden" data-tab="compliance" onclick="setTab('compliance')" id="tabCompliance"><span data-i18n="tab_compliance">Compliance</span><span id="compBadge" class="abadge amber hidden"></span></button>
       <button class="tab" data-tab="alerts" onclick="setTab('alerts')" id="tabAlerts"><span data-i18n="tab_alerts">Alerts</span><span id="alertBadge" class="abadge hidden"></span></button>
@@ -195,6 +237,7 @@
     <div id="mainView">
       <div id="tab-clients" class="hidden"><div class="panel"><h3 id="clientsTitle">Clients — ranked by revenue (EGP)</h3><div id="clientsTable"></div></div></div>
       <div id="tab-engagements" class="hidden"><div class="panel"><h3 data-i18n="tab_eng">All engagements</h3><div id="engTable"></div></div></div>
+      <div id="tab-credentials" class="hidden"><div id="credView"></div></div>
       <div id="tab-list"><div class="panel"><h3 data-i18n="tab_list">Client list</h3><div id="listTable"></div></div></div>
       <div id="tab-compliance" class="hidden"><div id="complianceTable"></div></div>
       <div id="tab-alerts" class="hidden"><div id="alertsTable"></div></div>
@@ -205,6 +248,9 @@
     <div id="clientView" class="hidden"></div>
   </div>
 </div>
+
+<!-- PRINT (credentials export; only shown when printing) -->
+<div id="printView"></div>
 
 <!-- CLIENT MODAL -->
 <div class="overlay" id="ovClient"><div class="modal">
@@ -477,7 +523,19 @@ const I18N={
   a_email_pass:"Enter your email and password.", a_signin_failed:"Sign-in failed.", a_account_created:"Account created — signing you in…",
   a_client_required:"Client name is required.", a_eng_required:"Service line and year are required.",
   a_valid_email:"Enter a valid email address.", a_could_not_add:"Could not add: ", a_could_not_save:"Could not save: ",
-  a_delete_eng:"Delete this engagement?", a_something_wrong:"Something went wrong: "
+  a_delete_eng:"Delete this engagement?", a_something_wrong:"Something went wrong: ",
+  tab_cred:"Credentials", cred_title:"Credentials for proposals",
+  cred_intro:"Filter past and current clients, untick any you don't want to show, then print or download the list for a proposal. Revenue is never included.",
+  f_services:"Service lines", f_industry:"Industry", f_status:"Client status", f_years:"Years", f_logo:"Logo", f_sort:"Sort by",
+  all_word:"All", to_word:"to", any_year:"Any",
+  logo_any:"Any", logo_with:"Has logo", logo_without:"Missing logo",
+  sort_name:"Name (A–Z)", sort_recent:"Most recent work", sort_industry:"Industry",
+  cred_status_note:"Current or former follows each client's relationship setting. Clients with no engagements are left out.",
+  reset_filters:"Reset filters", n_sel:"{n} of {total} clients selected", select_all:"Select all", select_none:"Clear selection",
+  opt_wall:"Logo wall", opt_table:"Client list", opt_status:"Show current / former",
+  l_export_title:"Title", def_export_title:"Selected credentials", print_btn:"🖨 Print / PDF", csv_btn:"⬇ Download CSV",
+  no_cred:"No clients match these filters.", nothing_selected:"Select at least one client to export.",
+  th_years:"Years", prepared_on:"Prepared {d}", n_clients:"{n} clients"
  },
  ar:{
   app_title:"قاعدة بيانات العملاء", signin_sub:"Moore Egypt — سجّل الدخول للمتابعة",
@@ -597,7 +655,19 @@ const I18N={
   a_email_pass:"أدخل بريدك وكلمة المرور.", a_signin_failed:"فشل تسجيل الدخول.", a_account_created:"تم إنشاء الحساب — جارٍ تسجيل دخولك…",
   a_client_required:"اسم العميل مطلوب.", a_eng_required:"خط الخدمة والسنة مطلوبان.",
   a_valid_email:"أدخل بريداً إلكترونياً صحيحاً.", a_could_not_add:"تعذّر الإضافة: ", a_could_not_save:"تعذّر الحفظ: ",
-  a_delete_eng:"حذف هذا التكليف؟", a_something_wrong:"حدث خطأ ما: "
+  a_delete_eng:"حذف هذا التكليف؟", a_something_wrong:"حدث خطأ ما: ",
+  tab_cred:"سابقة الأعمال", cred_title:"سابقة الأعمال للعروض",
+  cred_intro:"صفِّ العملاء الحاليين والسابقين، وألغِ تحديد من لا تريد عرضه، ثم اطبع القائمة أو نزّلها لاستخدامها في عرض. لا تُدرج الإيرادات أبداً.",
+  f_services:"خطوط الخدمة", f_industry:"المجال", f_status:"حالة العميل", f_years:"السنوات", f_logo:"الشعار", f_sort:"الترتيب حسب",
+  all_word:"الكل", to_word:"إلى", any_year:"أي سنة",
+  logo_any:"الكل", logo_with:"له شعار", logo_without:"بدون شعار",
+  sort_name:"الاسم (أ–ي)", sort_recent:"أحدث عمل", sort_industry:"المجال",
+  cred_status_note:"حالي أو سابق يتبع إعداد علاقة كل عميل. يُستبعد العملاء الذين ليس لديهم تكليفات.",
+  reset_filters:"مسح عوامل التصفية", n_sel:"تم تحديد {n} من {total} عميل", select_all:"تحديد الكل", select_none:"إلغاء التحديد",
+  opt_wall:"لوحة الشعارات", opt_table:"قائمة العملاء", opt_status:"إظهار حالي / سابق",
+  l_export_title:"العنوان", def_export_title:"سابقة أعمال مختارة", print_btn:"🖨 طباعة / PDF", csv_btn:"⬇ تنزيل CSV",
+  no_cred:"لا يوجد عملاء مطابقون لعوامل التصفية.", nothing_selected:"حدّد عميلاً واحداً على الأقل للتصدير.",
+  th_years:"السنوات", prepared_on:"أُعدّ في {d}", n_clients:"{n} عميل"
  }
 };
 function t(k,v){let s=(I18N[state.lang]&&I18N[state.lang][k])!=null?I18N[state.lang][k]:(I18N.en[k]!=null?I18N.en[k]:k);
@@ -959,7 +1029,7 @@ function statusDot(st){const col={red:'#d64352',yellow:'#e0a81e',green:'#16b685'
 function statusCell(c){const st=clientStatus(c);return `<div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0]||'')}</span></div>`}
 
 /* ============ RENDER ============ */
-function renderAll(){ if(can('seePortfolioDash')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('manageUsers'))renderUsers(); }
+function renderAll(){ if(can('seePortfolioDash')){renderStats();renderClients();renderPeople();} renderEng(); renderList(); renderCredentials(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('manageUsers'))renderUsers(); }
 
 function renderStats(){
   const el=$('stats'); const clients=data.clients.length;
@@ -1845,9 +1915,143 @@ async function saveAssign(){
   closeModal('ovAssign'); await refresh();
 }
 
+/* ============ CREDENTIALS (proposal export) ============ */
+const credDefaults=()=>({svc:new Set(),ind:new Set(),status:'all',from:'',to:'',logo:'any',sort:'name'});
+let cred={...credDefaults(),excluded:new Set(),wall:true,table:true,showStatus:true,title:''};
+// Logos come from the private client-logos bucket; sign all visible ones in one call and keep them in logoUrlCache
+let credLogoFetch=null;
+function initials(name){return String(name||'').split(/\s+/).filter(w=>/^[\p{L}\p{N}]/u.test(w)).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'—'}
+function cachedLogo(c){const h=c&&c.logo_file&&logoUrlCache[c.logo_file];return h&&h.exp>Date.now()?h.url:null}
+function prefetchCredLogos(rows){
+  const paths=[...new Set(rows.map(r=>r.c.logo_file).filter(p=>p&&!cachedLogo({logo_file:p})))];
+  if(!paths.length||credLogoFetch)return;
+  credLogoFetch=sb.storage.from('client-logos').createSignedUrls(paths,3600).then(({data:urls})=>{
+    (urls||[]).forEach(u=>{if(u.signedUrl)logoUrlCache[u.path]={url:u.signedUrl,exp:Date.now()+50*60*1000};});
+  }).catch(e=>console.warn('logos',e)).finally(()=>{credLogoFetch=null;
+    if(paths.some(p=>cachedLogo({logo_file:p})))renderCredentials();});
+}
+function credRows(){
+  const from=cred.from?+cred.from:null, to=cred.to?+cred.to:null, out=[];
+  filteredClients().forEach(c=>{
+    if(cred.ind.size&&!cred.ind.has(c.industry||''))return;
+    if(cred.logo==='with'&&!c.logo_file||cred.logo==='without'&&c.logo_file)return;
+    const all=engForClient(c.id); if(!all.length)return;
+    const current=clientRelationship(c).status==='current';
+    if(cred.status==='current'&&!current||cred.status==='former'&&current)return;
+    const engs=all.filter(e=>(!cred.svc.size||cred.svc.has(e.service_line))&&(from==null||+e.year>=from)&&(to==null||+e.year<=to));
+    if(!engs.length)return;
+    const ys=engs.map(e=>+e.year).filter(Boolean);
+    out.push({c,current,services:[...new Set(engs.map(e=>e.service_line).filter(Boolean))],
+      first:ys.length?Math.min(...ys):null,last:ys.length?Math.max(...ys):null});
+  });
+  const byName=(a,b)=>(a.c.name||'').localeCompare(b.c.name||'');
+  const sorts={name:byName,recent:(a,b)=>(b.last||0)-(a.last||0)||byName(a,b),
+    industry:(a,b)=>(a.c.industry||'￿').localeCompare(b.c.industry||'￿')||byName(a,b)};
+  return out.sort(sorts[cred.sort]||byName);
+}
+function credSelected(){return credRows().filter(r=>!cred.excluded.has(r.c.id))}
+function yearSpan(r){return r.first==null?'—':(r.first===r.last?String(r.first):r.first+'–'+r.last)}
+function credStatusLabel(r){return t(r.current?'rel_current':'rel_former')}
+// service lines grouped by department; anything older/free-text in the data goes under "Other"
+function credServiceGroups(){
+  const known=new Set(SERVICE_GROUPS.flatMap(g=>g.services.map(s=>s.name)));
+  const extra=[...new Set(data.engagements.map(e=>e.service_line).filter(s=>s&&!known.has(s)))].sort();
+  return SERVICE_GROUPS.map(g=>({dept:g.dept,services:g.services.map(s=>s.name).concat(g.dept==='Other'?extra:[])}));
+}
+function credToggleSet(k,v){cred[k].has(v)?cred[k].delete(v):cred[k].add(v);renderCredentials();}
+function credToggleDept(i){const svcs=credServiceGroups()[i].services;const allOn=svcs.every(s=>cred.svc.has(s));
+  svcs.forEach(s=>allOn?cred.svc.delete(s):cred.svc.add(s));renderCredentials();}
+function credSet(k,v){cred[k]=v;renderCredentials();}
+function credReset(){Object.assign(cred,credDefaults());cred.excluded.clear();renderCredentials();}
+function credPick(id){cred.excluded.has(id)?cred.excluded.delete(id):cred.excluded.add(id);renderCredentials();}
+function credSelectAll(on){const ids=credRows().map(r=>r.c.id);ids.forEach(id=>on?cred.excluded.delete(id):cred.excluded.add(id));renderCredentials();}
+function renderCredentials(){
+  const el=$('credView'); if(!el)return;
+  const rows=credRows(), sel=rows.filter(r=>!cred.excluded.has(r.c.id));
+  prefetchCredLogos(rows);
+  const nowY=new Date().getFullYear();
+  const minY=Math.min(nowY,...data.engagements.map(e=>+e.year).filter(Boolean)), years=[];
+  for(let y=nowY;y>=minY;y--) years.push(y);
+  const yearSel=k=>`<select onchange="credSet('${k}',this.value)"><option value="">${t('any_year')}</option>${years.map(y=>`<option${String(cred[k])===String(y)?' selected':''}>${y}</option>`).join('')}</select>`;
+  const chip=(k,v,label)=>`<span class="fchip${cred[k].has(v)?' on':''}" onclick="credToggleSet('${k}',decodeURIComponent('${encodeURIComponent(v).replace(/'/g,'%27')}'))">${esc(label||v)}</span>`;
+  const seg=(k,opts)=>`<span class="seg">${opts.map(([v,l])=>`<button class="${cred[k]===v?'primary':''}" onclick="credSet('${k}','${v}')">${t(l)}</button>`).join('')}</span>`;
+  const svcRow=credServiceGroups().filter(g=>g.services.length).map((g,i)=>`<span class="fgrp"><span class="fdept" onclick="credToggleDept(${i})">${esc(g.dept)}:</span>${g.services.map(s=>chip('svc',s)).join('')}</span>`).join('');
+  const inds=[...new Set(data.clients.filter(c=>engForClient(c.id).length).map(c=>c.industry).filter(Boolean))].sort();
+  const card=r=>{const c=r.c,off=cred.excluded.has(c.id),url=cachedLogo(c);
+    return `<div class="credcard${off?' off':''}" onclick="credPick('${c.id}')">
+      <input type="checkbox" class="tick"${off?'':' checked'} tabindex="-1">
+      <div class="logobox">${url?`<img src="${esc(url)}" alt="${esc(c.name)}">`:`<span class="ini">${esc(initials(c.name))}</span>`}</div>
+      <div class="nm"><span class="linkname" onclick="event.stopPropagation();openClient('${c.id}')">${esc(c.name)}</span></div>
+      <div class="sub2" style="margin:0">${esc(c.industry||'—')} · ${yearSpan(r)}</div>
+      <div><span class="chip rel-${r.current?'current':'former'}">${credStatusLabel(r)}</span>${r.services.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>
+    </div>`;};
+  el.innerHTML=`
+    <div class="panel"><h3>${t('cred_title')}</h3><div class="credf">
+      <div class="hint">${t('cred_intro')}</div>
+      <div class="credrow"><span class="flbl">${t('f_services')}</span>${svcRow}</div>
+      ${inds.length?`<div class="credrow"><span class="flbl">${t('f_industry')}</span><span class="fgrp">${inds.map(v=>chip('ind',v)).join('')}</span></div>`:''}
+      <div class="credrow"><span class="flbl">${t('f_status')}</span>${seg('status',[['all','all_word'],['current','rel_current'],['former','rel_former']])}
+        <span class="flbl" style="min-width:0">${t('f_years')}</span>${yearSel('from')} ${t('to_word')} ${yearSel('to')}</div>
+      <div class="credrow"><span class="flbl">${t('f_logo')}</span>${seg('logo',[['any','logo_any'],['with','logo_with'],['without','logo_without']])}
+        <span class="flbl" style="min-width:0">${t('f_sort')}</span><select onchange="credSet('sort',this.value)">${['name','recent','industry'].map(v=>`<option value="${v}"${cred.sort===v?' selected':''}>${t('sort_'+v)}</option>`).join('')}</select>
+        <span class="spacer"></span><button class="ghost" onclick="credReset()">${t('reset_filters')}</button></div>
+      <div class="hint">${t('cred_status_note')}</div>
+    </div></div>
+    <div class="credbar">
+      <strong>${t('n_sel',{n:sel.length,total:rows.length})}</strong>
+      <button onclick="credSelectAll(true)">${t('select_all')}</button><button onclick="credSelectAll(false)">${t('select_none')}</button>
+      <span class="spacer"></span>
+      <label><input type="checkbox"${cred.wall?' checked':''} onchange="cred.wall=this.checked">${t('opt_wall')}</label>
+      <label><input type="checkbox"${cred.table?' checked':''} onchange="cred.table=this.checked">${t('opt_table')}</label>
+      <label><input type="checkbox"${cred.showStatus?' checked':''} onchange="cred.showStatus=this.checked">${t('opt_status')}</label>
+    </div>
+    <div class="credbar">
+      <label>${t('l_export_title')} <input id="credTitle" value="${esc(cred.title||t('def_export_title'))}" oninput="cred.title=this.value" style="min-width:240px"></label>
+      <span class="spacer"></span>
+      <button onclick="credCsv()">${t('csv_btn')}</button><button class="primary" onclick="credPrint()">${t('print_btn')}</button>
+    </div>
+    ${rows.length?`<div class="credgrid">${rows.map(card).join('')}</div>`:`<div class="panel"><div class="empty">${t('no_cred')}</div></div>`}`;
+}
+function credFilterSummary(){
+  const parts=[];
+  if(cred.svc.size)parts.push([...cred.svc].join(', '));
+  if(cred.ind.size)parts.push([...cred.ind].join(', '));
+  if(cred.status!=='all')parts.push(t('rel_'+cred.status));
+  if(cred.from||cred.to)parts.push((cred.from||'…')+'–'+(cred.to||'…'));
+  return parts.join(' · ');
+}
+function credPrintHtml(rows){
+  const title=cred.title||t('def_export_title'), summary=credFilterSummary();
+  const wall=cred.wall?`<div class="pv-wall">${rows.map(r=>{const url=cachedLogo(r.c);
+    return `<div class="pv-tile" title="${esc(r.c.name)}">${url?`<img src="${esc(url)}" alt="${esc(r.c.name)}">`:esc(r.c.name)}</div>`;}).join('')}</div>`:'';
+  const table=cred.table?`<table><thead><tr><th>#</th><th>${t('th_client')}</th><th>${t('th_industry')}</th><th>${t('th_services')}</th><th>${t('th_years')}</th>${cred.showStatus?`<th>${t('th_relationship')}</th>`:''}</tr></thead><tbody>${
+    rows.map((r,i)=>`<tr><td>${i+1}</td><td><b>${esc(r.c.name)}</b></td><td>${esc(r.c.industry||'—')}</td><td>${esc(r.services.join(', '))}</td><td>${yearSpan(r)}</td>${cred.showStatus?`<td>${credStatusLabel(r)}</td>`:''}</tr>`).join('')}</tbody></table>`:'';
+  return `<div class="pv"><div class="pv-head"><div><h1>${esc(title)}</h1>
+    <div class="meta">${t('n_clients',{n:rows.length})}${summary?' · '+esc(summary):''} · ${t('prepared_on',{d:fmtDate(todayISO())})}</div></div>
+    <img src="${LOGO_IMG}" alt="Moore Egypt"></div>${wall}${table}</div>`;
+}
+async function credPrint(){
+  const rows=credSelected(); if(!rows.length){alert(t('nothing_selected'));return}
+  prefetchCredLogos(rows); if(credLogoFetch)await credLogoFetch;
+  const pv=$('printView'); pv.innerHTML=credPrintHtml(rows);
+  // wait for logos so they make it onto the page
+  await Promise.all([...pv.querySelectorAll('img')].map(img=>img.complete?null:new Promise(r=>{img.onload=img.onerror=r;})));
+  window.print();
+}
+function credCsv(){
+  const rows=credSelected(); if(!rows.length){alert(t('nothing_selected'));return}
+  const q=v=>{const s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const head=[t('th_code'),t('th_client'),t('group_word'),t('th_industry'),t('th_type'),t('th_services'),t('th_years'),t('th_relationship')];
+  const lines=[head].concat(rows.map(r=>{const g=groupOf(r.c);
+    return [r.c.client_code,r.c.name,g?g.name:'',r.c.industry||'',ctStr(r.c.client_types),r.services.join('; '),yearSpan(r),credStatusLabel(r)];}));
+  const blob=new Blob(['﻿'+lines.map(l=>l.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`credentials-${todayISO()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
 /* ============ MISC ============ */
 function setTab(tb){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tb));
-  ['clients','engagements','list','partners','managers','compliance','alerts','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
+  ['clients','engagements','credentials','list','partners','managers','compliance','alerts','users'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==tb));
   if(viewClientId||viewGroupId||viewReviewId)closeClient();}
 function closeModal(id){$(id).classList.remove('show');}
 function goHome(){
