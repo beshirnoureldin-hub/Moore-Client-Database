@@ -77,6 +77,9 @@
   .rank{width:34px;color:var(--muted);font-weight:700}.rank.top{color:var(--brand)}
   .chip{display:inline-block;background:var(--chip);color:var(--muted);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:600;margin:1px 2px}
   .chip.st-open{background:#e6f6ee;color:#1f9d6b}.chip.st-closed{background:#eef1f8;color:#66738c}
+  .chip.rel-current{background:#e6f6ee;color:#1f7a4d}.chip.rel-former{background:#eef1f8;color:#66738c}
+  .chip.rel-manual::after{content:" •";opacity:.7}
+  .relfilter{min-width:150px}
   .code{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700}
   .linkname{color:var(--brand);font-weight:700;cursor:pointer}.linkname:hover{text-decoration:underline}
   .sub2{color:var(--muted);font-size:11px;margin-top:3px}
@@ -175,6 +178,7 @@
       <button id="btnRates" onclick="openRates()" data-i18n="exchange_rates">💱 Exchange rates</button>
       <button id="btnUsers" onclick="setTab('users')" class="ghost" data-i18n="settings">⚙ Settings</button>
       <div class="spacer"></div>
+      <select id="relFilter" class="relfilter" onchange="renderAll()"><option value="" data-i18n="rel_all">All clients</option><option value="current" data-i18n="rel_current_pl">Current clients</option><option value="former" data-i18n="rel_former_pl">Former clients</option></select>
       <input class="search" id="search" data-i18n-ph="search_ph" placeholder="Search client or service…" oninput="renderAll()">
     </div>
     <div class="tabs" id="tabs">
@@ -234,6 +238,9 @@
         <select id="cAc"><option value="no" data-i18n="no">No</option><option value="yes" data-i18n="yes">Yes</option></select></div>
       <div class="field"><label data-i18n="l_ac_date">A&amp;C date</label><input id="cAcDate" type="date"></div>
     </div>
+    <div class="field"><label data-i18n="l_relationship">Client relationship</label>
+      <select id="cRel"><option value="" data-i18n="rel_auto">Automatic (from engagements)</option><option value="current" data-i18n="rel_current">Current</option><option value="former" data-i18n="rel_former">Former</option></select>
+      <div class="hint" data-i18n="rel_hint">Automatic: current while any engagement is open or the latest engagement is from this year or last year; otherwise former.</div></div>
     <div class="field"><label data-i18n="l_notes">Notes</label><textarea id="cNotes" rows="2"></textarea></div>
   </div>
   <div class="foot"><button onclick="closeModal('ovClient')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveClient()" data-i18n="save_client">Save client</button></div>
@@ -418,6 +425,11 @@ const I18N={
   eng_partner_short:"Partner", eng_manager_short:"Manager",
   contract_at:"Contract: {ccy} @ {rate} EGP", contract_egp:"Contract: EGP",
   st_open:"Open", st_closed:"Closed",
+  th_relationship:"Relationship", l_relationship:"Client relationship", rel_auto:"Automatic (from engagements)",
+  rel_current:"Current", rel_former:"Former", rel_all:"All clients", rel_current_pl:"Current clients", rel_former_pl:"Former clients",
+  rel_hint:"Automatic: current while any engagement is open or the latest engagement is from this year or last year; otherwise former.",
+  rel_manual:"Set manually", rel_why_open:"Has an open engagement", rel_why_recent:"Latest engagement: {y}", rel_why_none:"No engagements yet",
+  a_rel_migration:"Saved, but the client relationship was not stored: the database needs the relationship_status column (see supabase/migrations).",
   m_add_client:"Add client", m_edit_client:"Edit client", l_client_name:"Client name *", l_industry:"Industry",
   l_legal:"Legal structure", l_currency:"Contractual currency", l_notes:"Notes", opt_select:"Select…",
   ct_label:"Client type", ct_transnational:"Transnational", ct_pie:"PIE", ct_listed:"Listed", ct_family:"Family owned", ct_private:"Private", ct_government:"Government", ct_fra:"FRA Regulated", th_type:"Type",
@@ -530,6 +542,11 @@ const I18N={
   eng_partner_short:"الشريك", eng_manager_short:"المدير",
   contract_at:"التعاقد: {ccy} @ {rate} ج.م", contract_egp:"التعاقد: بالجنيه",
   st_open:"مفتوح", st_closed:"مغلق",
+  th_relationship:"العلاقة", l_relationship:"علاقة العميل", rel_auto:"تلقائي (حسب الارتباطات)",
+  rel_current:"حالي", rel_former:"سابق", rel_all:"كل العملاء", rel_current_pl:"العملاء الحاليون", rel_former_pl:"العملاء السابقون",
+  rel_hint:"تلقائي: يكون العميل حالياً طالما لديه ارتباط مفتوح أو كان آخر ارتباط في هذا العام أو العام الماضي، وإلا يُعتبر سابقاً.",
+  rel_manual:"محدد يدوياً", rel_why_open:"لديه ارتباط مفتوح", rel_why_recent:"آخر ارتباط: {y}", rel_why_none:"لا توجد ارتباطات بعد",
+  a_rel_migration:"تم الحفظ، لكن لم تُحفظ علاقة العميل: قاعدة البيانات تحتاج إلى العمود relationship_status (راجع supabase/migrations).",
   m_add_client:"إضافة عميل", m_edit_client:"تعديل العميل", l_client_name:"اسم العميل *", l_industry:"المجال",
   l_legal:"الكيان القانوني", l_currency:"العملة التعاقدية", l_notes:"ملاحظات", opt_select:"اختر…",
   ct_label:"نوع العميل", ct_transnational:"عابر للحدود", ct_pie:"كيان ذو مصلحة عامة (PIE)", ct_listed:"مُدرجة", ct_family:"مملوكة لعائلة", ct_private:"خاصة", ct_government:"حكومية", ct_fra:"خاضع لرقابة الهيئة العامة للرقابة المالية", th_type:"النوع",
@@ -736,7 +753,21 @@ function toEGP(e){const c=clientById(e.client_id);return (Number(e.revenue)||0)*
 function clientById(id){return data.clients.find(c=>c.id===id)}
 function engForClient(id){return data.engagements.filter(e=>e.client_id===id)}
 function searchTerm(){return $('search').value.trim().toLowerCase()}
-function filteredClients(){const q=searchTerm();return data.clients.filter(c=>{if(!q)return true;const g=groupOf(c);
+// Current vs former client: a manual override (clients.relationship_status) wins; otherwise derived from engagements.
+// Automatic rule: current while any engagement is open, or the latest engagement year is this year or last year.
+function clientRelationship(c){
+  const engs=engForClient(c.id);
+  const lastYear=engs.reduce((m,e)=>Math.max(m,+e.year||0),0)||null;
+  if(c.relationship_status==='current'||c.relationship_status==='former')return {status:c.relationship_status,manual:true,lastYear,why:t('rel_manual')};
+  if(!engs.length)return {status:'current',manual:false,lastYear,why:t('rel_why_none')};
+  if(engs.some(e=>(e.status||'Open')==='Open'))return {status:'current',manual:false,lastYear,why:t('rel_why_open')};
+  const nowY=new Date().getFullYear();
+  return {status:lastYear&&lastYear>=nowY-1?'current':'former',manual:false,lastYear,why:lastYear?t('rel_why_recent',{y:lastYear}):t('rel_why_none')};
+}
+function relChip(c){const r=clientRelationship(c);
+  return `<span class="chip rel-${r.status}${r.manual?' rel-manual':''}" title="${esc(r.why)}">${t('rel_'+r.status)}</span>`;}
+function relFilterVal(){const el=$('relFilter');return el?el.value:''}
+function filteredClients(){const q=searchTerm(), rf=relFilterVal();return data.clients.filter(c=>{if(rf&&clientRelationship(c).status!==rf)return false;if(!q)return true;const g=groupOf(c);
   return (c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q)||(g&&((g.name||'').toLowerCase().includes(q)||(g.group_code||'').toLowerCase().includes(q)));});}
 function groupById(id){return (data.groups||[]).find(g=>g.id===id)}
 function groupOf(c){return c&&c.group_id?groupById(c.group_id):null}
@@ -957,7 +988,7 @@ function renderClients(){
   const clientRow=(r,rank,indent)=>`<tr${indent?' style="background:var(--brand-soft)"':''}><td class="rank ${!indent&&rank<=3&&fin?'top':''}">${fin&&!indent?rank:''}</td>
       <td>${statusCell(r.c)}</td>
       <td class="code">${r.c.client_code}</td>
-      <td${indent?' style="padding-inline-start:28px"':''}><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span>${indent?'':groupChip(groupOf(r.c))}<div class="sub2">${[r.c.industry,ctStr(r.c.client_types),r.c.legal_structure,r.c.contract_currency].filter(Boolean).map(esc).join(' · ')}</div></td>
+      <td${indent?' style="padding-inline-start:28px"':''}><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span>${indent?'':groupChip(groupOf(r.c))} ${relChip(r.c)}<div class="sub2">${[r.c.industry,ctStr(r.c.client_types),r.c.legal_structure,r.c.contract_currency].filter(Boolean).map(esc).join(' · ')}</div></td>
       ${fin?`<td class="num money">${money(r.total)}</td>`:''}
       <td class="num">${r.count}</td>
       <td>${svcChips(r.services)}</td></tr>`;
@@ -994,9 +1025,10 @@ function renderList(){
   const el=$('listTable'); const list=filteredClients();
   if(!list.length){el.innerHTML='<div class="empty">'+t('no_clients')+'</div>';return}
   const assign=can('assignClients');
-  el.innerHTML=`<table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
+  el.innerHTML=`<table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_relationship')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
     list.map(c=>{const svc=[...new Set(engForClient(c.id).map(e=>e.service_line).filter(Boolean))];
     return `<tr><td>${statusCell(c)}</td>
+      <td>${relChip(c)}</td>
       <td>${esc(c.industry||'—')}</td>
       <td>${ctChips(c.client_types)}</td>
       <td>${svc.length?svc.map(s=>`<span class="chip">${esc(s)}</span>`).join(''):'—'}</td>
@@ -1035,7 +1067,7 @@ function renderClient(){
   $('clientView').innerHTML=`
    <button class="backbtn" onclick="closeClient()">${t('back')}</button>
    <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-     <div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
+     <div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)} <span style="font-size:13px">${relChip(c)}</span>${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
        <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract].filter(Boolean).map(esc).join(' · ')}</div>
        ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}</div>
      <div style="display:flex;gap:8px">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
@@ -1192,6 +1224,7 @@ function openClientModal(id){
   const manual=can('manualCompliance'); // compliance staff complete KYC/A&C only through an approved questionnaire
   ['cKyc','cKycDate','cAc','cAcDate'].forEach(id=>$(id).disabled=!manual);
   $('cKycRow').title=$('cAcRow').title=manual?'':t('via_questionnaire');
+  $('cRel').value=c?c.relationship_status||'':'';
   $('cNotes').value=c?c.notes||'':''; $('ovClient').dataset.id=id||'';
   updateFRA();
   $('ovClient').classList.add('show');
@@ -1205,11 +1238,15 @@ async function saveClient(){
     kyc_completed:$('cKyc').value==='yes', kyc_last_review:$('cKycDate').value||null,
     ac_completed:$('cAc').value==='yes', ac_date:$('cAcDate').value||null,
     group_id:$('cGroup').value||null,
+    relationship_status:$('cRel').value||null,
     notes:$('cNotes').value.trim()||null};
   if(!payload.name){alert(t('a_client_required'));return}
   let err;
-  if(id){({error:err}=await sb.from('clients').update(payload).eq('id',id));}
-  else{({error:err}=await sb.from('clients').insert(payload));}
+  const write=p=>id?sb.from('clients').update(p).eq('id',id):sb.from('clients').insert(p);
+  ({error:err}=await write(payload));
+  if(err&&/relationship_status/.test(err.message||'')){ // column not migrated yet: save everything else
+    const {relationship_status,...rest}=payload; ({error:err}=await write(rest));
+    if(!err)alert(t('a_rel_migration'));}
   if(err){alert(t('a_could_not_save')+err.message);return}
   closeModal('ovClient'); await refresh();
 }
